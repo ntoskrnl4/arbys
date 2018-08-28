@@ -8,7 +8,7 @@ import config
 from datetime import datetime
 
 
-logfile = time.strftime("%Y-%m-") + config.logfile
+logfile = "logs/" + time.strftime("%Y-%m-") + config.logfile
 logfile_encoding = config.logfile_encoding
 
 
