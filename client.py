@@ -113,6 +113,7 @@ class FrameworkClient(discord.Client):
 			await func()
 		await self.change_presence(activity=discord.Game(name=f"{self.default_prefix}help"), status=discord.Status.online)
 		self.active = True
+		log.info(f"Bot is ready to go! We are @{client.user.name}#{client.user.discriminator} (id: {client.user.id})")
 
 	async def on_shutdown(self):
 		for func in self._shutdown_handlers:
