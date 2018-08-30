@@ -12,7 +12,7 @@ async def help_command(command: str, message: discord.Message):
 		embed = discord.Embed(title=f"Help for {client.cfg_bot_name}", description=f"For help on a specific command, run `{client.default_prefix}help <command>`", colour=0x06b206)
 
 		for cmd, desc in client._basic_help.items():
-			embed = embed.add_field(name=f"{cmd}", value=desc, inline=True)
+			embed = embed.add_field(name=f"{cmd}", value=desc, inline=False)
 		embed.set_footer(text=datetime.datetime.utcnow().__str__())
 		await message.channel.send(embed=embed)
 		client.debug_response_trace(clear=1)
@@ -38,7 +38,7 @@ async def help_command(command: str, message: discord.Message):
 			await message.channel.send(embed=embed)
 			client.debug_response_trace(clear=1)
 
-client.basic_help({"help [command]": "Get help with the bot or a certain command."})
+client.basic_help({"help [command]": "Get help with the bot or a certain command"})
 
 help_long_help = {
 	"Usage:": f"`{client.default_prefix}help [command]`",
