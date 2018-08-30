@@ -27,7 +27,7 @@ def debug(message: str, include_exception: bool = False) -> None:
 		if config.terminal_loglevel <= 5:
 			sys.stdout.write(f"[{timestamp}] [D] {message}\n")
 			sys.stdout.flush()
-	except:
+	except Exception as e:
 		# There are some cases that we could end up having a problem writing out logged information.
 		# It's once happened to me where PyCharm crashed but disconnected my running bots, causing the stdio pipes to
 		# break and any stdio failed, returning an exception back to Discord for every single message the bot received.
@@ -49,7 +49,7 @@ def info(message: str, include_exception: bool = False) -> None:
 		if config.terminal_loglevel <= 4:
 			sys.stdout.write(f"[{timestamp}] [I] {message}\n")
 			sys.stdout.flush()
-	except:
+	except Exception as e:
 		# See comment in debug() function here
 		pass
 
@@ -69,7 +69,7 @@ def warn(message: str, include_exception: bool = False) -> None:
 			else:
 				sys.stdout.write(f"[{timestamp}] [W] {message}\n")
 				sys.stdout.flush()
-	except:
+	except Exception as e:
 		# See comment in debug() function here
 		pass
 
@@ -92,7 +92,7 @@ def error(message: str, include_exception: bool = True) -> None:
 			else:
 				sys.stdout.write(f"[[{timestamp}]] [E] {message}\n")
 				sys.stdout.flush()
-	except:
+	except Exception as e:
 		# See comment in debug() function here
 		pass
 
@@ -112,7 +112,7 @@ def critical(message: str, include_exception: bool = True) -> None:
 			else:
 				sys.stdout.write(f"[{timestamp}] [C] {message}\n")
 				sys.stdout.flush()
-	except:
+	except Exception as e:
 		# See comment in debug() function here
 		pass
 
@@ -135,6 +135,6 @@ def fatal(message: str, include_exception: bool = True) -> None:
 			else:
 				sys.stdout.write(f"[{timestamp}] [F] {message}\n")
 				sys.stdout.flush()
-	except:
+	except Exception as e:
 		# See comment in debug() function here
 		pass
