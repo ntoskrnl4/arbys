@@ -1,4 +1,4 @@
-from __future__ import annotations
+# 3.7: from __future__ import annotations
 from typing import List, Callable, Dict, Tuple, Union
 from prefix import check_prefix
 from exceptions import UserBotError, HandlerError, TimerException
