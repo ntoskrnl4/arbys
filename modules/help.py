@@ -24,7 +24,7 @@ async def help_command(command: str, message: discord.Message):
 
 		if sub_help is None:
 			# unknown command branch
-			embed = discord.Embed(title=f"Help for command `{command.lower()[5:]}`", description=f"Unknown command (got: {command.lower()[5:]})", colour=0xa20303)
+			embed = discord.Embed(title=f"Help for command `{command.lower()[5:]}`", description=f"Unknown command", colour=0xa20303)
 			embed = embed.set_footer(text=datetime.datetime.utcnow().__str__())
 			await message.channel.send(embed=embed)
 			client.debug_response_trace(clear=1)
