@@ -119,6 +119,7 @@ class FrameworkClient(discord.Client):
 			await func()
 
 	async def on_message(self, message: discord.Message):
+		log_message(message)
 		if not self.active:
 			return
 		for func in self._message_handlers:
