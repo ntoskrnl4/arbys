@@ -38,7 +38,7 @@ async def help_command(command: str, message: discord.Message):
 			await message.channel.send(embed=embed)
 			client.debug_response_trace(clear=1)
 
-client.basic_help({"help [command]": "Get help with the bot or a certain command"})
+client.basic_help("help [command]", "Get help with the bot or a certain command")
 
 help_long_help = {
 	"Usage:": f"`{client.default_prefix}help [command]`",
