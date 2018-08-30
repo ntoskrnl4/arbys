@@ -20,7 +20,7 @@ def debug(message: str, include_exception: bool = False) -> None:
 	try:
 		timestamp = now()
 		if include_exception and (sys.exc_info()[2] is not None):
-			message += "\n"+traceback.format_exc()
+			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 6:
 			with open(logfile, "a", encoding=logfile_encoding) as lf:
 				lf.write(f"[{timestamp}] [D] {message}\n")
@@ -45,20 +45,20 @@ def msg(message: str, include_exception: bool = False) -> None:
 			message += "\n"+traceback.format_exc()
 		if config.file_loglevel >= 5:
 			with open(logfile, "a", encoding=logfile_encoding) as lf:
-				lf.write(f"[{timestamp}] [I] {message}\n")
+				lf.write(f"[{timestamp}] [M] {message}\n")
 		if config.terminal_loglevel >= 5:
-			sys.stdout.write(f"[{timestamp}] [I] {message}\n")
+			sys.stdout.write(f"[{timestamp}] [M] {message}\n")
 			sys.stdout.flush()
 	except Exception as e:
 		# See comment in debug() function here
 		pass
-	
-	
+
+
 def info(message: str, include_exception: bool = False) -> None:
 	try:
 		timestamp = now()
 		if include_exception and (sys.exc_info()[2] is not None):
-			message += "\n"+traceback.format_exc()
+			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 4:
 			with open(logfile, "a", encoding=logfile_encoding) as lf:
 				lf.write(f"[{timestamp}] [I] {message}\n")
@@ -74,7 +74,7 @@ def warn(message: str, include_exception: bool = False) -> None:
 	try:
 		timestamp = now()
 		if include_exception and (sys.exc_info()[2] is not None):
-			message += "\n"+traceback.format_exc()
+			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 3:
 			with open(logfile, "a", encoding=logfile_encoding) as lf:
 				lf.write(f"[{timestamp}] [W] {message}\n")
@@ -97,7 +97,7 @@ def error(message: str, include_exception: bool = True) -> None:
 	try:
 		timestamp = now()
 		if include_exception and (sys.exc_info()[2] is not None):
-			message += "\n"+traceback.format_exc()
+			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 2:
 			with open(logfile, "a", encoding=logfile_encoding) as lf:
 				lf.write(f"[[{timestamp}]] [E] {message}\n")
@@ -117,7 +117,7 @@ def critical(message: str, include_exception: bool = True) -> None:
 	try:
 		timestamp = now()
 		if include_exception and (sys.exc_info()[2] is not None):
-			message += "\n"+traceback.format_exc()
+			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 1:
 			with open(logfile, "a", encoding=logfile_encoding) as lf:
 				lf.write(f"[{timestamp}] [C] {message}\n")

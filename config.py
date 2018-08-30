@@ -7,7 +7,8 @@
 # Error: 2
 # Warning: 3
 # Info: 4
-# Debug: 5
+# Messages: 5
+# Debug: 6
 
 terminal_loglevel = 5
 exc_to_stderr = True  # log warnings and above to stderr instead of stdout
