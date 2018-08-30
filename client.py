@@ -185,11 +185,14 @@ class FrameworkClient(discord.Client):
 	def shutdown(self, func: Callable[[], None]):
 		self._shutdown_handlers.append(func)
 
-	def basic_help(self, d: dict):
-		self._basic_help.update(d)
+	def basic_help(self, title: str, desc: str, include_prefix: bool = True):
+		if include_prefix:
+			self._basic_help.update({f"{self.default_prefix}{title}": desc})
+		else:
+			self._basic_help.update({f"{title}": desc})
 
 	def long_help(self, cmd: str, mapping: dict):
-		self._long_help[cmd] = mapping
+		self._long_help[self.default_prefix+cmd] = mapping
 
 	def debug_response_trace(self, flag: Union[bool, int] = False, clear: Union[bool, int] = False):
 		"""
