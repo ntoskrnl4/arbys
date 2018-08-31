@@ -70,6 +70,7 @@ class FrameworkClient(discord.Client):
 			self.default_prefix = self.prefixes[0]
 		except IndexError:
 			log.warning("No prefixes configured in bot - it may be impossible to trigger the bot")
+			log.info("Bot prefix set to `AddPrefixesForMeThanks ` as a result of no set prefix")
 			self.default_prefix = "AddPrefixesForMeThanks "
 
 	def run(self, *args, **kwargs) -> None:
