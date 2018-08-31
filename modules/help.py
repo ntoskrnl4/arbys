@@ -33,8 +33,8 @@ async def help_command(command: str, message: discord.Message):
 			embed = discord.Embed(title=f"Help for command `{command.lower()[5:]}`", description=sub_help.get("_description", discord.Embed.Empty), colour=0x06b206)
 			for title, text in sub_help.items():
 				embed = embed.add_field(name=title, value=text, inline=False)
-			if client.cmd_aliases[command.lower()[5:]]:
-				embed = embed.add_field(name="Aliases", value="\n".join(client.cmd_aliases[command.lower()[5:]]))
+			if client.cmd_aliases.get(command.lower()[5:], []):
+				embed = embed.add_field(name="Aliases", value="\n".join(client.cmd_aliases.get(command.lower()[5:], [])))
 			embed = embed.set_footer(text=datetime.datetime.utcnow().__str__())
 			await message.channel.send(embed=embed)
 			client.debug_response_trace(clear=1)
