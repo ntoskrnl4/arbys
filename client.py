@@ -180,6 +180,9 @@ class FrameworkClient(discord.Client):
 	def member_leave(self, func: Callable[[], None]):
 		self._member_leave_handlers.append(func)
 
+	def message(self, func: Callable[[], None]):
+		self._message_handlers.append(func)
+
 	def ready(self, func: Callable[[], None]):
 		self._ready_handlers.append(func)
 
