@@ -154,7 +154,6 @@ class FrameworkClient(discord.Client):
 			nonlocal aliases
 
 			async def new_cmd(command: str, message: discord.Message) -> None:
-				client.debug_response_trace(flag=True)
 				try:
 					await func(command, message)
 				except Exception:
@@ -163,7 +162,6 @@ class FrameworkClient(discord.Client):
 					embed = embed.set_footer(text="Error occurred at " + str(datetime.datetime.utcnow()))
 					await message.channel.send(embed=embed)
 					log.error(f"Error processing command: {message.content}", include_exception=True)
-				client.debug_response_trace(reset=1)
 
 			# now add the trigger plus aliases to the command dict
 			self._command_lookup[trigger] = new_cmd
@@ -196,61 +194,6 @@ class FrameworkClient(discord.Client):
 
 	def long_help(self, cmd: str, mapping: dict):
 		self._long_help[cmd] = mapping
-
-	def debug_response_trace(self, flag: Union[bool, int] = False, clear: Union[bool, int] = False, reset: Union[bool, int] = False):
-		"""
-		Internal timer to measure response times.
-
-		:param flag: Activate timer and start timing. If running, record timer to log.
-		:param clear: Log and reset the timer.
-		:param reset: Force reset the timer. Exception if any other value is True at the same time.
-		"""
-		marker = time.perf_counter()  # A double's precision is high enough that at 10 million seconds of uptime, the
-		# precision is only at about 1.8ns, which is far more than enough to measure timings. At 20 million seconds of
-		# uptime, precision would be 3.6ns. 20M seconds of uptime is 231 days, which is in all honesty an unlikely
-		# uptime to reach, although it's still good to know that should we get (and go past) there, our precision is
-		# still in the nanoseconds range.
-		if config.debug:
-			if bool(not (flag or clear) and (not reset)):
-				try:
-					raise TimerException("Function Argument Error")
-				except TimerException:
-					log.warning("Timer in client object activated, but no action performed (warn and clear args are both False)", include_exception=True)
-					return
-
-			if bool(flag and (not clear) and (not reset)):
-
-				# Start or log timer
-				if self._trace_timer is None:
-					# Start the timer
-					self._trace_timer = marker
-					return
-
-				if self._trace_timer is not None:
-					# Log timer
-					log.debug(f"Response time was {(marker-self._trace_timer)*1000:.4f} ms")
-					return
-
-			if bool(clear and (not flag) and (not reset)):
-				log.debug(f"Response time was {(marker-self._trace_timer)*1000:.4f} ms")
-				self._trace_timer = None
-				return
-
-			if bool(clear and flag and (not reset)):
-				log.debug(f"Response time was {(marker-self._trace_timer)*1000:.4f} ms")
-				self._trace_timer = marker
-				return
-
-			if bool(reset and not (clear or flag)):
-				self._trace_timer = None
-				return
-
-			if bool(reset and (clear or flag)):
-				try:
-					raise TimerException("Function Argument Error")
-				except TimerException:
-					log.warning(f"Timer in client object called with reset and another arg true (reset: {reset}, flag: {flag}, clear: {clear}", include_exception=True)
-					return
 
 
 client = FrameworkClient(status=discord.Status(config.boot_status))

@@ -15,7 +15,6 @@ async def help_command(command: str, message: discord.Message):
 			embed = embed.add_field(name=f"{cmd}", value=desc, inline=False)
 		embed.set_footer(text=datetime.datetime.utcnow().__str__())
 		await message.channel.send(embed=embed)
-		client.debug_response_trace(clear=1)
 
 	if command.lower().startswith("help "):  # a trailing space means there's text after it (Discord strips whitespace)
 
@@ -27,7 +26,6 @@ async def help_command(command: str, message: discord.Message):
 			embed = discord.Embed(title=f"Help for command `{command.lower()[5:]}`", description=f"Unknown command", colour=0xa20303)
 			embed = embed.set_footer(text=datetime.datetime.utcnow().__str__())
 			await message.channel.send(embed=embed)
-			client.debug_response_trace(clear=1)
 
 		elif type(sub_help) == dict:
 			embed = discord.Embed(title=f"Help for command `{command.lower()[5:]}`", description=sub_help.get("_description", discord.Embed.Empty), colour=0x06b206)
@@ -37,7 +35,6 @@ async def help_command(command: str, message: discord.Message):
 				embed = embed.add_field(name="Aliases", value="\n".join(client.cmd_aliases.get(command.lower()[5:], [])))
 			embed = embed.set_footer(text=datetime.datetime.utcnow().__str__())
 			await message.channel.send(embed=embed)
-			client.debug_response_trace(clear=1)
 
 client.basic_help("help [command]", "Get help with the bot or a certain command")
 
