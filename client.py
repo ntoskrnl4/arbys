@@ -117,6 +117,7 @@ class FrameworkClient(discord.Client):
 	async def on_shutdown(self):
 		for func in self._shutdown_handlers:
 			await func()
+			await asyncio.sleep(0.1)
 		client._do_cleanup()
 		sys.exit(0)
 
