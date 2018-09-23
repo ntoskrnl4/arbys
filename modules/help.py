@@ -39,7 +39,7 @@ async def help_command(command: str, message: discord.Message):
 client.basic_help("help [command]", "Get help with the bot or a certain command")
 
 help_long_help = {
-	"Usage:": f"`help [command]`",
+	"Usage:": f"`{client.default_prefix}help [command]`",
 	"Arguments": "`command` - (Optional) Bot command to fetch detailed help with.",
 	"Description": "This command fetches help information for a command or for all commands."
 }
