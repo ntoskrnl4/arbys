@@ -10,6 +10,7 @@ import datetime
 import config
 import asyncio
 import traceback
+import sys
 
 
 def log_message(message: discord.Message):
@@ -116,6 +117,8 @@ class FrameworkClient(discord.Client):
 	async def on_shutdown(self):
 		for func in self._shutdown_handlers:
 			await func()
+		client._do_cleanup()
+		sys.exit(0)
 
 	async def on_message(self, message: discord.Message):
 		log_message(message)
