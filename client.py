@@ -173,18 +173,23 @@ class FrameworkClient(discord.Client):
 
 	def member_join(self, func: Callable[[], None]):
 		self._member_join_handlers.append(func)
+		return func
 
 	def member_leave(self, func: Callable[[], None]):
 		self._member_leave_handlers.append(func)
+		return func
 
 	def message(self, func: Callable[[], None]):
 		self._message_handlers.append(func)
+		return func
 
 	def ready(self, func: Callable[[], None]):
 		self._ready_handlers.append(func)
+		return func
 
 	def shutdown(self, func: Callable[[], None]):
 		self._shutdown_handlers.append(func)
+		return func
 
 	def basic_help(self, title: str, desc: str, include_prefix: bool = True):
 		if include_prefix:
