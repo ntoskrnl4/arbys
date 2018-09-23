@@ -1,4 +1,3 @@
-import datetime
 import discord
 
 from client import client
