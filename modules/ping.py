@@ -12,7 +12,7 @@ async def help_command(command: str, message: discord.Message):
 client.basic_help("ping", "Returns the bot's latency to its connected API endpoint.")
 
 help_long_help = {
-	"Usage:": f"`ping`",
+	"Usage:": f"`{client.default_prefix}ping`",
 	"Arguments": "None",
 	"Description": "This command returns the bot's latency to the Discord API endpoint it is connected to."
 }
