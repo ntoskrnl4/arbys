@@ -1,5 +1,5 @@
 # 3.7: from __future__ import annotations
-from typing import List, Callable, Dict, Tuple, Union
+from typing import List, Callable, Dict, Union
 from prefix import check_prefix
 from exceptions import UserBotError, HandlerError, TimerException
 
@@ -35,13 +35,13 @@ class FrameworkClient(discord.Client):
 	_member_join_handlers: List[Callable[[discord.Member], None]] = []
 	_member_leave_handlers: List[Callable[[discord.Member], None]] = []
 
-	_basic_help = {}
+	_command_lookup: Dict[str, Callable[[discord.Message, str], None]] = {}
+
+	_basic_help: Dict[str, str] = {}
 	# Basic help dictionary should be a direct mapping of "command": "description". The prefix should not be included,
 	# as it will be automatically inserted into the listed title for each command. The description for each command
-	# should be a one-line description, although it can be multiple lines if necessary. These should be kept short as
-	# possible, as the basic help list will be compacted in the embed as much as possible. Do not include aliases, nor
-	# argument information, and shorten decsriptions as much as possible while maintaining easy understandability
-	# (breaking grammar will probably be necessary to achieve this).
+	# should be a one-line description, although it can be multiple lines if necessary. Do not include aliases, nor
+	# argument information, and shorten decsriptions as much as possible while maintaining easy understandability.
 
 	_long_help: Dict[str, Dict[str, str]] = {}
 	# Long help should be a dictionary of dictionaries; keys should be the command, and the fields of the dictionary
@@ -69,9 +69,7 @@ class FrameworkClient(discord.Client):
 		try:
 			self.default_prefix = self.prefixes[0]
 		except IndexError:
-			log.warning("No prefixes configured in bot - it may be impossible to trigger the bot")
-			log.info("Bot prefix set to `AddPrefixesForMeThanks ` as a result of no set prefix")
-			self.default_prefix = "AddPrefixesForMeThanks "
+			log.warning("No prefixes configured in bot - it will be impossible to trigger the bot")
 
 	def run(self, *args, **kwargs) -> None:
 		self.first_execution = time.perf_counter()  # monotonic on both Windows and Linux which is :thumbsup:
@@ -123,8 +121,18 @@ class FrameworkClient(discord.Client):
 		log_message(message)
 		if not self.active:
 			return
-		for func in self._message_handlers:
-			await func(message)
+		is_cmd, this_prefix = check_prefix(message.content, self.prefixes)
+		if not is_cmd:
+			for func in self._message_handlers:
+				await func(message)
+		else:
+			command = message.content[len(this_prefix):]
+			known_cmd, run_by = check_prefix(command, list(self._command_lookup.keys()))
+			if not known_cmd:
+				# unknown command branch
+				await message.channel.send("`Bad command or file name`\n(See bot help for help)")
+				return
+			await self._command_lookup[run_by](command, message)
 
 	async def on_member_join(self, member: discord.Member):
 		for func in self._member_join_handlers:
@@ -134,7 +142,7 @@ class FrameworkClient(discord.Client):
 		for func in self._member_leave_handlers:
 			await func(member)
 
-	def command(self, trigger: str, aliases: List[str] = None, prefixes=None):
+	def command(self, trigger: str, aliases: List[str] = None):
 		if aliases is None:
 			aliases = []
 
@@ -143,34 +151,25 @@ class FrameworkClient(discord.Client):
 			self.alias_lookup[alias] = trigger
 
 		def inner_decorator(func: Callable[[str, discord.Message], None]):
-			async def new_cmd(message: discord.Message) -> None:
-				nonlocal prefixes, trigger, aliases
-				if prefixes is None:
-					prefixes = client.prefixes  # "self" shouldn't be defined, yes? PyCharm thinks otherwise...
-				result, this_prefix = check_prefix(message.content, prefixes)
-				if not result:
-					return
-				else:
-					# No way to do a case-insensitive replace so we simply chop the first X characters with the prefix
-					command = message.content[len(this_prefix):]
+			nonlocal aliases
 
-					# We can literally just run everything we did with prefixes with the command as well
-					triggers = [trigger]
-					triggers.extend(aliases)
-					is_us, _ = check_prefix(command, triggers)
-					if not is_us:
-						return
-					else:
-						client.debug_response_trace(flag=True)
-						try:
-							await func(command=command, message=message)  # PyCharm thinks these are unexpected, but they're not
-						except Exception:
-							stackdump = traceback.format_exc()
-							embed = discord.Embed(title="Internal error", description=f"There was an error processing the command. Here's the stack trace, if necessary (this is also recorded in the log):\n```{stackdump}```", colour=0xf00000)
-							embed = embed.set_footer(text="Error occurred at " + str(datetime.datetime.utcnow()))
-							await message.channel.send(embed=embed)
-							log.error(f"Error processing command: {message.content}", include_exception=True)
-			self._message_handlers.append(new_cmd)
+			async def new_cmd(command: str, message: discord.Message) -> None:
+				client.debug_response_trace(flag=True)
+				try:
+					await func(command, message)
+				except Exception:
+					stackdump = traceback.format_exc()
+					embed = discord.Embed(title="Internal error", description=f"There was an error processing the command. Here's the stack trace, if necessary (this is also recorded in the log):\n```{stackdump}```", colour=0xf00000)
+					embed = embed.set_footer(text="Error occurred at " + str(datetime.datetime.utcnow()))
+					await message.channel.send(embed=embed)
+					log.error(f"Error processing command: {message.content}", include_exception=True)
+				client.debug_response_trace(reset=1)
+
+			# now add the trigger plus aliases to the command dict
+			self._command_lookup[trigger] = new_cmd
+			for alias in aliases:
+				self._command_lookup[alias] = new_cmd
+
 			return new_cmd
 		return inner_decorator
 
@@ -220,25 +219,31 @@ class FrameworkClient(discord.Client):
 					return
 
 			if bool(flag and (not clear) and (not reset)):
+
 				# Start or log timer
 				if self._trace_timer is None:
 					# Start the timer
 					self._trace_timer = marker
 					return
+
 				if self._trace_timer is not None:
 					# Log timer
 					log.debug(f"Response time was {(marker-self._trace_timer)*1000:.4f} ms")
+					return
 
 			if bool(clear and (not flag) and (not reset)):
 				log.debug(f"Response time was {(marker-self._trace_timer)*1000:.4f} ms")
 				self._trace_timer = None
+				return
 
 			if bool(clear and flag and (not reset)):
 				log.debug(f"Response time was {(marker-self._trace_timer)*1000:.4f} ms")
 				self._trace_timer = marker
+				return
 
 			if bool(reset and not (clear or flag)):
 				self._trace_timer = None
+				return
 
 			if bool(reset and (clear or flag)):
 				try:
