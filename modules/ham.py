@@ -14,6 +14,7 @@ images = ["https://cdn.discordapp.com/attachments/384730762852958208/39865915941
 "https://cdn.discordapp.com/attachments/377206780700393473/398868005867487232/image.jpg",
 "https://cdn.discordapp.com/attachments/377206780700393473/398868036205150218/image.jpg",
 "https://cdn.discordapp.com/attachments/377206780700393473/398868053850587136/image.jpg",
+"https://cdn.discordapp.com/attachments/364489808674029578/494152743309541377/unknown.png",
 ]
 
 @client.command(trigger="ham",
