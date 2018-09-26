@@ -65,7 +65,7 @@ class FrameworkClient(discord.Client):
 		self.command_count: int = 0
 		self.message_count: int = 0
 		self.active: bool = False  # tells if we're doing something major eg. loading/unloading or reloading modules
-		self.prefixes = config.prefixes
+		self.prefixes = [x.lower() for x in config.prefixes]
 		try:
 			self.default_prefix = self.prefixes[0]
 		except IndexError:

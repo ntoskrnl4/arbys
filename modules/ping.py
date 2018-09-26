@@ -13,7 +13,6 @@ client.basic_help("ping", "Returns the bot's latency to its connected API endpoi
 
 help_long_help = {
 	"Usage:": f"`{client.default_prefix}ping`",
-	"Arguments": "None",
 	"Description": "This command returns the bot's latency to the Discord API endpoint it is connected to."
 }
 client.long_help("ping", help_long_help)
