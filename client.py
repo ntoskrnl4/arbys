@@ -28,6 +28,7 @@ def log_message(message: discord.Message):
 
 
 class FrameworkClient(discord.Client):
+	__version__ = "0.3.2-alpha"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
@@ -64,7 +65,7 @@ class FrameworkClient(discord.Client):
 		super().__init__(*args, **kwargs)
 		self.command_count: int = 0
 		self.message_count: int = 0
-		self.active: bool = False  # tells if we're doing something major eg. loading/unloading or reloading modules
+		self.active: bool = False
 		self.prefixes = [x.lower() for x in config.prefixes]
 		try:
 			self.default_prefix = self.prefixes[0]
@@ -106,16 +107,28 @@ class FrameworkClient(discord.Client):
 		log.info(f"Bot started at {str(self.first_execution_dt)} ({self.first_execution})")
 		super().run(*args, **kwargs)
 
+	# ==========
+	# d.py event triggers
+	# ==========
+
+
 	async def on_ready(self):
 		for func in self._ready_handlers:
-			await func()
+			try:
+				await func()
+			except Exception as e:
+				log.warning("Ignoring exception in ready coroutine (see stack trace below)", include_exception=True)
 		await self.change_presence(activity=discord.Game(name=f"{self.default_prefix}help"), status=discord.Status.online)
 		self.active = True
 		log.info(f"Bot is ready to go! We are @{client.user.name}#{client.user.discriminator} (id: {client.user.id})")
 
 	async def on_shutdown(self):
+		log.debug(f"entering shutdown handler, here's goodbye from on_shutdown()")
 		for func in self._shutdown_handlers:
-			await func()
+			try:
+				await func()
+			except Exception as e:
+				log.warning("Ignoring exception in shutdown coroutine (see stack trace below)", include_exception=True)
 
 	async def on_message(self, message: discord.Message):
 		log_message(message)
@@ -124,7 +137,10 @@ class FrameworkClient(discord.Client):
 		is_cmd, this_prefix = check_prefix(message.content, self.prefixes)
 		if not is_cmd:
 			for func in self._message_handlers:
-				await func(message)
+				try:
+					await func(message)
+				except Exception as e:
+					log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
 		else:
 			command = message.content[len(this_prefix):]
 			known_cmd, run_by = check_prefix(command, list(self._command_lookup.keys()))
@@ -136,11 +152,21 @@ class FrameworkClient(discord.Client):
 
 	async def on_member_join(self, member: discord.Member):
 		for func in self._member_join_handlers:
-			await func(member)
+			try:
+				await func(member)
+			except Exception as e:
+				log.warning("Ignoring exception in member_join coroutine (see stack trace below)", include_exception=True)
 
 	async def on_member_leave(self, member: discord.Member):
 		for func in self._member_leave_handlers:
-			await func(member)
+			try:
+				await func(member)
+			except Exception as e:
+				log.warning("Ignoring exception in member_leave coroutine (see stack trace below)", include_exception=True)
+
+	# ==========
+	# Decorators
+	# ==========
 
 	def command(self, trigger: str, aliases: List[str] = None):
 		if aliases is None:
@@ -165,35 +191,43 @@ class FrameworkClient(discord.Client):
 
 			# now add the trigger plus aliases to the command dict
 			self._command_lookup[trigger] = new_cmd
-			for alias in aliases:
+			for alias in aliases:  # name shadows but we don't care tbh it's only a tempvar
 				self._command_lookup[alias] = new_cmd
 
+			log.debug(f"registered new command handler {func.__name__}() with trigger '{trigger}' and aliases: {aliases}")
 			return new_cmd
 		return inner_decorator
 
 	def member_join(self, func: Callable[[], None]):
 		self._member_join_handlers.append(func)
+		log.debug(f"registered new member_join handler {func.__name__}()")
 
 	def member_leave(self, func: Callable[[], None]):
 		self._member_leave_handlers.append(func)
+		log.debug(f"registered new member_leave handler {func.__name__}()")
 
 	def message(self, func: Callable[[], None]):
 		self._message_handlers.append(func)
+		log.debug(f"registered new message handler {func.__name__}()")
 
 	def ready(self, func: Callable[[], None]):
 		self._ready_handlers.append(func)
+		log.debug(f"registered new ready handler {func.__name__}()")
 
 	def shutdown(self, func: Callable[[], None]):
 		self._shutdown_handlers.append(func)
+		log.debug(f"registered new shutdown handler {func.__name__}()")
 
 	def basic_help(self, title: str, desc: str, include_prefix: bool = True):
 		if include_prefix:
 			self._basic_help.update({f"{self.default_prefix}{title}": desc})
 		else:
 			self._basic_help.update({f"{title}": desc})
+		log.debug(f"registered new basic_help entry under the title {title}")
 
 	def long_help(self, cmd: str, mapping: dict):
 		self._long_help[cmd] = mapping
+		log.debug(f"registered new long_help entry for command {cmd}")
 
 
 client = FrameworkClient(status=discord.Status(config.boot_status))
