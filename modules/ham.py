@@ -17,8 +17,8 @@ images = ["https://cdn.discordapp.com/attachments/384730762852958208/39865915941
 "https://cdn.discordapp.com/attachments/364489808674029578/494152743309541377/unknown.png",
 ]
 
-@client.command(trigger="ham",
-				aliases=[])  # aliases is a list of strs of other triggers for the command
+
+@client.command(trigger="ham", aliases=[])
 async def command(command: str, message: discord.Message):
 	e = discord.Embed(title=discord.Embed.Empty, description=discord.Embed.Empty, colour=discord.Embed.Empty)
 	e = e.set_image(url=random.choice(images))

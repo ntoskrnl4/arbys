@@ -116,7 +116,7 @@ async def command(command: str, message: discord.Message):
 
 	if isUser:
 		await message.channel.send(embed=user_embed)
-		await asyncio.sleep(0.05)  # slight delay because we want the information in order and because that's a shitload of info
+		await asyncio.sleep(0.05)
 
 	if isServer:
 		await message.channel.send(embed=server_embed)
@@ -128,6 +128,4 @@ async def command(command: str, message: discord.Message):
 
 	if not (isUser or isServer or (isTextChannel or isVoiceChannel)):  # if not a user, server, or channel:
 		await message.channel.send(f"Unknown user, server, or channel with ID {command[6:]}. I might not be able to 'see' that object.")
-	return
-
 	return
