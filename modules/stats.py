@@ -1,9 +1,10 @@
+from datetime import datetime
 from client import client
+import threading
 import discord
+import socket
 import time
 import os
-import socket
-import threading
 
 try:
 	import psutil
@@ -15,12 +16,12 @@ else:
 
 cmd_name = "stats"
 
-client.basic_help(title=cmd_name, desc=f"shows various running statistics of {client.full_bot_name}")
+client.basic_help(title=cmd_name, desc=f"shows various running statistics of {client.cfg_bot_name}")
 
 detailed_help = {
 	"Usage": f"{client.default_prefix}{cmd_name}",
-	"Description": f"This command shows different available statistics of {client.full_bot_name}, including servers, uptime, and commands run.",
-	"Related": f"`{client.default_prefix} info` - shows information about {client.full_bot_name}",
+	"Description": f"This command shows different available statistics of {client.cfg_bot_name}, including servers, uptime, and commands run.",
+	"Related": f"`{client.default_prefix} info` - shows information about {client.cfg_bot_name}",
 }
 client.long_help(cmd=cmd_name, mapping=detailed_help)
 
@@ -28,7 +29,7 @@ client.long_help(cmd=cmd_name, mapping=detailed_help)
 @client.ready()
 async def readier():
 	def psutil_update_thread_loop(client):
-		while not client.shutting_down:
+		while client.active:
 			# self_process.cpu_percent()  # not sure how to optimize this loop in another thread so we're going to comment it out and deal with it for now
 			psutil.cpu_percent(percpu=True)
 			time.sleep(5)
@@ -40,7 +41,11 @@ async def readier():
 
 
 @client.command(trigger=cmd_name, aliases=["statistics"])
-async def command(command: str, message: discord.Message):
+async def statistics(command: str, message: discord.Message):
+	if "--hostname" in command:
+		include_hostname = True
+	else:
+		include_hostname = False
 	async with message.channel.typing():
 
 		if has_psutil:
@@ -58,9 +63,9 @@ async def command(command: str, message: discord.Message):
 				cpu_text += f"**CPU {index}:** {v}%\n"
 				index += 1
 
-		embed = discord.Embed(title=f"{client.full_bot_name} stats", description=discord.Embed.Empty, color=0x404040)
+		embed = discord.Embed(title=f"{client.cfg_bot_name} stats", description=discord.Embed.Empty, color=0x404040)
 		up = time.perf_counter() - client.first_execution
-		embed = embed.add_field(name="Uptime", value=f"{str(up)} seconds")
+		embed = embed.add_field(name="Uptime", value=f"{up:.3f} seconds")
 		embed = embed.add_field(name="Servers", value=len(client.guilds))
 		embed = embed.add_field(name="Total commands run in all servers since last reboot", value=client.command_count, inline=False)
 		mps = client.message_count / up
@@ -70,13 +75,13 @@ async def command(command: str, message: discord.Message):
 		n_playing = len([x for x in client.voice_clients if x.is_playing()])
 		embed = embed.add_field(name="Connected voice chats", value=f"{n_connected} ({n_playing} playing)")
 		embed = embed.add_field(name="Bot Process ID", value=os.getpid())
-		embed = embed.add_field(name="Host Machine Name", value=socket.gethostname())
+		if include_hostname: embed = embed.add_field(name="Host Machine Name", value=socket.gethostname())
 		if has_psutil:
 			embed = embed.add_field(name="Process Memory Usage", value=f"{self_m_used/(1024*1024):.3f} MiB")
 			embed = embed.add_field(name="Process CPU Usage (relative to one core)", value=f"{cpu_self:.1f}%")
 			embed = embed.add_field(name="System RAM Usage", value=f"{m_used/(1024*1024):.1f}/{m_total/(1024*1024):.1f} MiB ({(m_used/m_total)*100:.2f}%)")
 			embed = embed.add_field(name="System CPU Usage", value=cpu_text, inline=False)
 
-		embed = embed.set_footer(text=time.ctime())
+		embed = embed.set_footer(text=datetime.utcnow().__str__())
 	await message.channel.send(embed=embed)
 
