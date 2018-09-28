@@ -4,10 +4,10 @@ import discord
 import re
 
 
-
 ft8_last_sent = {}
 
-@client.message()
+
+@client.message
 async def ft8_checker(message: discord.Message):
 	global ft8_last_sent
 	try:

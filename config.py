@@ -11,10 +11,10 @@
 # Messages: 5
 # Debug: 6
 
-terminal_loglevel = 5
+terminal_loglevel = 6
 exc_to_stderr = True  # log warnings and above to stderr instead of stdout
 
-file_loglevel = 5
+file_loglevel = 6
 logfile = "bot.log"  # log file names will have the year and month prepended to them, for example: 2018-06-bot.log
 logfile_encoding = "UTF-8"  # UTF-8 recommended because emojis
 
@@ -27,11 +27,11 @@ boot_status = "dnd"
 
 # All the prefixes the bot will use. The first one in this list will be considered the default.
 prefixes = [
-	"cqdx",
+	"cqdx ",
 	"! ",
 	"!",
-	"<@398599948557615130>",
-	"<@!398599948557615130>",
+	"<@398599948557615130> ",
+	"<@!398599948557615130> ",
 ]
 
 # Enables extra checks and more debug info about the bot

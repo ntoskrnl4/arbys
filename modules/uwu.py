@@ -3,7 +3,7 @@ import discord
 import key
 
 
-@client.message()
+@client.message
 async def ft8_checker(message: discord.Message):
 	if (message.author.id in key.uwu_users) and ("uwu" in message.content.lower()):
 		try:

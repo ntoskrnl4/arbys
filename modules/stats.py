@@ -26,7 +26,7 @@ detailed_help = {
 client.long_help(cmd=cmd_name, mapping=detailed_help)
 
 
-@client.ready()
+@client.ready
 async def readier():
 	def psutil_update_thread_loop(client):
 		while client.active:
@@ -46,6 +46,11 @@ async def statistics(command: str, message: discord.Message):
 		include_hostname = True
 	else:
 		include_hostname = False
+
+	if "--uptime" in command:
+		up = time.perf_counter() - client.first_execution
+		await message.channel.send(f"Uptime:\n`{up:.3f}` seconds\n`{up/86400:.4f}` days")
+		return
 	async with message.channel.typing():
 
 		if has_psutil:

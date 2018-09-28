@@ -57,6 +57,8 @@ class FrameworkClient(discord.Client):
 	prefixes: List[str] = []
 	default_prefix: str = None
 	log_all_messages: bool = config.log_messages
+	message_count = 0
+	command_count = 0
 
 	_trace_timer: float = None
 
@@ -135,6 +137,7 @@ class FrameworkClient(discord.Client):
 		sys.exit(0)
 
 	async def on_message(self, message: discord.Message):
+		self.message_count += 1
 		log_message(message)
 		if not self.active:
 			return
@@ -185,7 +188,8 @@ class FrameworkClient(discord.Client):
 
 			async def new_cmd(command: str, message: discord.Message) -> None:
 				try:
-					await func(command, message)
+					self.command_count += 1
+					await func(command, message)  # Gateway back to usercode
 				except Exception:
 					stackdump = traceback.format_exc()
 					embed = discord.Embed(title="Internal error", description=f"There was an error processing the command. Here's the stack trace, if necessary (this is also recorded in the log):\n```{stackdump}```", colour=0xf00000)
