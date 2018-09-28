@@ -1,5 +1,9 @@
 from client import client
+import datetime
 import discord
+import modules
+import time
+import log
 
 
 @client.command(trigger="_exec", aliases=[])
@@ -35,6 +39,7 @@ async def command(command: str, message: discord.Message):
 			exec(f"global {parts[1]}")
 			exec(f"{parts[1]} = {parts[2]}", locals(), globals())
 			exec(f"global {parts[1]}")
+			await message.channel.send(f"Updated `{parts[1]}`: `{eval(parts[1])}`")
 			await message.add_reaction("✅")
 			return
 	return

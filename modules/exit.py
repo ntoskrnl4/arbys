@@ -23,7 +23,7 @@ client.long_help(cmd=cmd_name, mapping=detailed_help)
 @client.command(trigger=cmd_name,
 				aliases=[])  # aliases is a list of strs of other triggers for the command
 async def command(command: str, message: discord.Message):
-	if message.author.id not in shutdown_users:
+	if (any([x.id in key.shutdown_ids for x in message.author.roles]) or message.author.id in key.shutdown_ids):
 		try:
 			await message.add_reaction("❌")
 			if message.author.id == shutdown_easter_egg_user:

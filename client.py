@@ -60,8 +60,6 @@ class FrameworkClient(discord.Client):
 	message_count = 0
 	command_count = 0
 
-	_trace_timer: float = None
-
 	def __init__(self, *args, **kwargs) -> None:
 		self.first_execution: float = None
 		self.first_execution_dt: datetime.datetime = None
@@ -86,24 +84,24 @@ class FrameworkClient(discord.Client):
 		if config.debug:
 
 			if any([not asyncio.iscoroutinefunction(x) for x in self._ready_handlers]):
-				log.critical("not all ready functions are coroutines, this could cause things to stop working or a fatal exception to be raised")
-				raise HandlerError("not all ready functions are coroutines, this could cause things to stop working or a fatal exception to be raised")
+				log.critical("not all ready functions are coroutines")
+				raise HandlerError("not all ready functions are coroutines")
 
 			if any([not asyncio.iscoroutinefunction(x) for x in self._shutdown_handlers]):
-				log.critical("not all shutdown functions are coroutines, this could cause things to stop working or a fatal exception to be raised")
-				raise HandlerError("not all shutdown functions are coroutines, this could cause things to stop working or a fatal exception to be raised")
+				log.critical("not all shutdown functions are coroutines")
+				raise HandlerError("not all shutdown functions are coroutines")
 
 			if any([not asyncio.iscoroutinefunction(x) for x in self._message_handlers]):
-				log.critical("not all message handlers are coroutines, this could cause things to stop working or a fatal exception to be raised")
-				raise HandlerError("not all message handlers are coroutines, this could cause things to stop working or a fatal exception to be raised")
+				log.critical("not all message handlers are coroutines")
+				raise HandlerError("not all message handlers are coroutines")
 
 			if any([not asyncio.iscoroutinefunction(x) for x in self._member_join_handlers]):
-				log.critical("not all member join handlers are coroutines, this could cause things to stop working or a fatal exception to be raised")
-				raise HandlerError("not all member join handlers are coroutines, this could cause things to stop working or a fatal exception to be raised")
+				log.critical("not all member join handlers are coroutines")
+				raise HandlerError("not all member join handlers are coroutines")
 
 			if any([not asyncio.iscoroutinefunction(x) for x in self._member_leave_handlers]):
-				log.critical("not all member leave handlers are coroutines, this could cause things to stop working or a fatal exception to be raised")
-				raise HandlerError("not all member leave handlers are coroutines, this could cause things to stop working or a fatal exception to be raised")
+				log.critical("not all member leave handlers are coroutines")
+				raise HandlerError(f"not all member leave handlers are coroutines")
 
 			log.debug("all functions good to run (are coroutines)")
 
@@ -113,7 +111,6 @@ class FrameworkClient(discord.Client):
 	# ==========
 	# d.py event triggers
 	# ==========
-
 
 	async def on_ready(self):
 		for func in self._ready_handlers:
