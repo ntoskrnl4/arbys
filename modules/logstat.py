@@ -1,15 +1,12 @@
-import datetime
-import discord
-
-import key
-import log
-import config
-import os
-import re  # wish me luck
-
 from typing import List, Dict, Union
 from collections import Counter
+from modules import __common__
 from client import client
+import datetime
+import discord
+import log
+import os
+import re  # wish me luck
 
 detailed_help = {
 	"usage": f"{client.default_prefix}logstat [days] [stat] <count>",
@@ -82,13 +79,9 @@ def match_user_id(string) -> Union[int, None]:
 
 @client.command(trigger="logstat")
 async def logstat(command: str, message: discord.Message):
-	if key.mod_role_id not in [x.id for x in message.author.roles]:
-		try:
-			await message.add_reaction("❌")
-		except:
-			pass
-		finally:
-			return
+	if not __common__.check_permission(message.author):
+		await message.add_reaction("❌")
+		return
 
 	async with message.channel.typing():
 
