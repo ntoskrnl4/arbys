@@ -138,14 +138,14 @@ class FrameworkClient(discord.Client):
 		log_message(message)
 		if not self.active:
 			return
+		for func in self._message_handlers:
+			try:
+				await func(message)
+			except Exception as e:
+				log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
+
 		is_cmd, this_prefix = check_prefix(message.content, self.prefixes)
-		if not is_cmd:
-			for func in self._message_handlers:
-				try:
-					await func(message)
-				except Exception as e:
-					log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
-		else:
+		if is_cmd:
 			command = message.content[len(this_prefix):]
 			known_cmd, run_by = check_prefix(command, list(self._command_lookup.keys()))
 			if not known_cmd:
