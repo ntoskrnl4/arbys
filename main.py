@@ -20,6 +20,7 @@ from modules import ham
 from modules import help
 from modules import htm
 from modules import info
+from modules import join_leave_msgs
 from modules import kzop
 from modules import logstat
 from modules import markov
