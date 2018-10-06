@@ -18,11 +18,15 @@ def stripMentionsToID(raw: str, ignore_escaped: bool = False) -> int:
 	else:
 		return ret
 
+
 def check_permission(user: Union[discord.Member, discord.User]) -> bool:
-	if user.id in key.admin_users:
-		return True
 	try:
 		if any([x.id in key.admin_users for x in user.roles]):
 			return True
-	else:
-		return False
+		else:
+			return False
+	except:
+		if user.id in key.admin_users:
+			return True
+		else:
+			return False
