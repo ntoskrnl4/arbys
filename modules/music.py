@@ -2,7 +2,7 @@ from client import client
 import discord
 
 
-client.basic_help(title="music", desc="This is what my command does, in a sentence.")
+client.basic_help(title="music", desc="Handles music functionality within the bot. (Currently disabled)")
 
 detailed_help = {
 	"Usage": f"{client.default_prefix}music <subcommand> [args]",
