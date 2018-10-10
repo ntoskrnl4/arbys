@@ -29,6 +29,7 @@ from modules import music
 from modules import nou
 from modules import phonehand
 from modules import ping
+from modules import pingreact
 from modules import relay
 from modules import spaceman
 from modules import stats
