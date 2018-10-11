@@ -10,8 +10,7 @@ client.basic_help(title=cmd_name, desc="Shows current band conditions.")
 
 detailed_help = {
 	"Usage": f"{client.default_prefix}{cmd_name}",
-	"Arguments": "None",
-	"Description": "This is what the command does!",
+	"Description": "This command shows the latest Amateur HF band conditions. This should not be relied upon like a bible; it is purely calculated and is not a measure of actual current HF conditions.",
 }
 client.long_help(cmd=cmd_name, mapping=detailed_help)
 

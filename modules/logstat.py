@@ -4,18 +4,16 @@ from modules import __common__
 from client import client
 import datetime
 import discord
+import asyncio
 import log
 import os
 import re  # wish me luck
 
 detailed_help = {
-	"usage": f"{client.default_prefix}logstat [days] [stat] <count>",
-	"args": "`days` - days to look back in logs\n`stat` - statistic to view. \"users\" or \"channels\"\n`count` (Optional) - how many to show in scoreboard (ignored if viewing channels)",
-	"desc": "This command looks through all logs in the bot and shows a record of the top users and channels in a server. This requires the bot to be actually logging messages. This command may take a very long time to run, depending on the number of log messages.",
-	"sub": None,
-	"ex": f"`{client.default_prefix}logstat 30 channels`\n`{client.default_prefix} logstat 7 users 25`",
-	"perms": "Send Messages",
-	"related": f"`{client.default_prefix}stats` - show running statistics for the bot",
+	"Usage": f"{client.default_prefix}logstat <days> <stat> [count]",
+	"Arguments": "`days` - days to look back in logs\n`stat` - statistic to view. \"users\" or \"channels\"\n`count` (Optional) - how many to show in scoreboard (ignored if viewing channels)",
+	"Description": "This command looks through all logs in the bot and shows a record of the top users and channels in a server. This requires the bot to be actually logging messages. This command may take a very long time to run, depending on the number of log messages.",
+	"Related Commands": f"`{client.default_prefix}stats` - show running statistics for the bot",
 }
 
 client.long_help(cmd="logstat", mapping=detailed_help)
@@ -90,10 +88,12 @@ async def logstat(command: str, message: discord.Message):
 		for f in logfiles:
 			with open("logs/"+f, "r", encoding="utf-8") as file:
 				all_log_lines.extend(file.readlines())
+				await asyncio.sleep(0.1)
 
 		parsed_logs: List[Dict] = []
 
 		# we'll now loop through all the lines and parse them into dicts
+		n = 0
 		for line in all_log_lines:
 			new_entry = {}
 
@@ -133,6 +133,9 @@ async def logstat(command: str, message: discord.Message):
 			else:
 				continue
 
+			n += 1
+			if n % 5000 is 0:
+				await asyncio.sleep(0.1)
 			# finally, we can add our parsed line into the list
 			parsed_logs.append(new_entry)
 		# if you've got the above loop collapsed: all lines have been parsed into Dicts with the following properties:
@@ -151,9 +154,11 @@ async def logstat(command: str, message: discord.Message):
 			await message.channel.send("First argument to command `logstat` must be number of days behind log to check, as an int")
 			return
 
+		await asyncio.sleep(0.1)
 		# now we'll trim to only the most recent days
 		snipped_logs = [x for x in parsed_logs if (x["ts"] > limit)]
 		# and then to what's in this server
+		await asyncio.sleep(0.1)
 		filtered_logs = [x for x in snipped_logs if x["server_id"] == message.guild.id]
 
 		record = Counter()
@@ -163,8 +168,12 @@ async def logstat(command: str, message: discord.Message):
 				scoreboard = int(parts[3])
 			except:  # it's fine
 				scoreboard = 25
+			n = 0
 			for entry in filtered_logs:
 				record[entry["user_id"]] += 1
+				n += 1
+				if n % 5000 is 0:
+					await asyncio.sleep(0.1)
 
 			top = record.most_common(scoreboard)
 			top_mentions = [(getattr(message.guild.get_member(x), "mention", f"<@{x}>"), y) for x, y in top]
@@ -190,7 +199,7 @@ async def logstat(command: str, message: discord.Message):
 		i = 0
 		for x, y in top_mentions:
 			i += 1
-			data += f"`{str(i).rjust(3)}: {str(y).rjust(5)} messages:` {x}"
+			data += f"`{'0' if i < 100 else ''}{'0' if i < 10 else ''}{str(i)}: {'0' if y < 10000 else ''}{'0' if y < 1000 else ''}{'0' if y < 100 else ''}{'0' if y < 10 else ''}{str(y)} messages:` {x}\n"
 		embed = discord.Embed(title=f"Logfile statistics for past {int(parts[1])} days", description=f"Here are the top {scoreboard} {item} in this server, sorted by number of messages.\n"+data)
 		try:
 			await message.channel.send(embed=embed)
