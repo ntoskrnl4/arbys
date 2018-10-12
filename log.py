@@ -119,7 +119,7 @@ def error(message: str, include_exception: bool = True) -> None:
 		if config.file_loglevel >= 2:
 			try:
 				with open(logfile, "a", encoding=logfile_encoding) as lf:
-					lf.write(f"[[{timestamp}]] [E] {message}\n")
+					lf.write(f"[{timestamp}] [E] {message}\n")
 			except:
 				pass
 		if config.terminal_loglevel >= 2:
@@ -127,7 +127,7 @@ def error(message: str, include_exception: bool = True) -> None:
 				sys.stderr.write(f"[{timestamp}] [E] {message}\n")
 				sys.stderr.flush()
 			else:
-				sys.stdout.write(f"[[{timestamp}]] [E] {message}\n")
+				sys.stdout.write(f"[{timestamp}] [E] {message}\n")
 				sys.stdout.flush()
 	except Exception as e:
 		# See comment in debug() function here
