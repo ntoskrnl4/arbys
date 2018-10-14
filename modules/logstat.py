@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plot
 from typing import List, Dict, Union
 from collections import Counter
 from modules import __common__
@@ -24,6 +25,22 @@ re_server_raw = re.compile(r" \[[^(\[\]#).]+ - \d+\] ")  # this should work ...?
 re_channel_raw = re.compile(r" \[#[a-z0-9_-]+ - \d{18}\] ")  # this was SOOOO MUCH EASIER thankfully (thanks Discord!)
 re_msg_id = re.compile(r"\[message id: \d{18}\]")
 re_user_raw = re.compile(r"\[\w+#\d{4} - \d+\]")
+
+def get_channel_name(id, message) -> str:
+	c = message.guild.get_channel(id)
+	if c is None:
+		return "Unknown channel"
+	else:
+		return f"#{c.name}"
+
+
+async def get_human_id(id, message) -> str:
+	m = message.guild.get_member(id)
+	if m is not None:
+		return f"@{m.name} ({m.display_name})"
+	else:
+		m = await client.get_user_info(id)
+		return f"@{m.name}#{m.discriminator}"
 
 
 def match_date(string) -> Union[datetime.datetime, None]:
@@ -145,6 +162,15 @@ async def logstat(command: str, message: discord.Message):
 		# args: logstat 30(days) users 25(top X)
 		# first we need to check if there's enough arguments
 		parts = command.split(" ")
+
+		# check if they want textual format
+		try:
+			parts.pop(parts.index("--text"))
+		except ValueError:
+			use_text = False
+		else:
+			use_text = True
+
 		if len(parts) < 3:
 			await message.channel.send("Not enough arguments provided to command. See help for help.")
 			return
@@ -176,16 +202,16 @@ async def logstat(command: str, message: discord.Message):
 					await asyncio.sleep(0.1)
 
 			top = record.most_common(scoreboard)
-			top_mentions = [(getattr(message.guild.get_member(x), "mention", f"<@{x}>"), y) for x, y in top]
+			top_mentions = {await get_human_id(x, message): y for x, y in top}
 
 		elif parts[2] in ["channel", "channels"]:
 			item = "channels"
-			scoreboard = len(message.guild.channels)
+			scoreboard = len(message.guild.text_channels)
 			for entry in filtered_logs:
 				record[entry["channel_id"]] += 1
 
 			top = record.most_common(scoreboard)
-			top_mentions = [(getattr(message.guild.get_channel(x), "mention", f"<#{x}>"), y) for x, y in top]
+			top_mentions = {get_channel_name(x, message): y for x, y in top if y is not 0}
 		elif parts[2] in ["active"]:
 			for entry in filtered_logs:
 				record[entry["user_id"]] += 1
@@ -195,16 +221,28 @@ async def logstat(command: str, message: discord.Message):
 			await message.channel.send("Unknown item to get records for. See help for help.")
 			return
 
-		data = ""
-		i = 0
-		for x, y in top_mentions:
-			i += 1
-			data += f"`{'0' if i < 100 else ''}{'0' if i < 10 else ''}{str(i)}: {'0' if y < 10000 else ''}{'0' if y < 1000 else ''}{'0' if y < 100 else ''}{'0' if y < 10 else ''}{str(y)} messages:` {x}\n"
-		embed = discord.Embed(title=f"Logfile statistics for past {int(parts[1])} days", description=f"Here are the top {scoreboard} {item} in this server, sorted by number of messages.\n"+data)
-		try:
-			await message.channel.send(embed=embed)
-		except:
-			await message.channel.send("Looks like that information was too long to post, sorry. It's been dumped to the log instead.")
-			log.info(f"logstat command could not be output back (too many items). here's the data:\n{data}")
+		if use_text:
+			data = ""
+			i = 0
+			for x, y in top_mentions:
+				i += 1
+				data += f"`{'0' if i < 100 else ''}{'0' if i < 10 else ''}{str(i)}: {'0' if y < 10000 else ''}{'0' if y < 1000 else ''}{'0' if y < 100 else ''}{'0' if y < 10 else ''}{str(y)} messages:` {x}\n"
+			embed = discord.Embed(title=f"Logfile statistics for past {int(parts[1])} days", description=f"Here are the top {scoreboard} {item} in this server, sorted by number of messages.\n"+data)
+			try:
+				await message.channel.send(embed=embed)
+			except:
+				await message.channel.send("Looks like that information was too long to post, sorry. It's been dumped to the log instead.")
+				log.info(f"logstat command could not be output back (too many items). here's the data:\n{data}")
 
+		if not use_text:
+			plot.rcdefaults()
+			plot.rcParams.update({'figure.autolayout': True})
+			figure, ax = plot.subplots()
+
+			ax.barh(range(len(top_mentions)), list(top_mentions.values()), align='center')
+			ax.set_xticks(range(len(top_mentions)), list(top_mentions.keys()))
+			ax.set_yticks(range(len(top_mentions)))
+			ax.set_yticklabels(list(top_mentions.keys()))
+			ax.invert_yaxis()
+			plot.show()
 	return
