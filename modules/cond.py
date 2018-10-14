@@ -1,5 +1,5 @@
 from client import client
-from io import StringIO
+from io import BytesIO
 import requests
 import discord
 import time
@@ -18,7 +18,7 @@ client.long_help(cmd=cmd_name, mapping=detailed_help)
 last_cond_update = 0
 cond_cache_time = 7200
 
-tempfile = StringIO()
+tempfile = BytesIO()
 
 @client.command(trigger=cmd_name)
 async def command(command: str, message: discord.Message):
