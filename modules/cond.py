@@ -31,9 +31,9 @@ async def command(command: str, message: discord.Message):
 		for block in req.iter_content(16384):
 			data += block
 		last_cond_update = time.time()
-		await message.channel.send(file=discord.File(BytesIO(data)))
+		await message.channel.send(file=discord.File(BytesIO(data), filename=f"{int(last_cond_update)}.gif"))
 		last_file = data
 	else:
 		await message.channel.send(f"Using cached image from {int(time.time()-last_cond_update)} seconds ago ({int((time.time()-last_cond_update)/60)} minutes ago)")
-		await message.channel.send(file=discord.File(last_file))
+		await message.channel.send(file=discord.File(last_file, filename=f"{int(last_cond_update)}.gif"))
 	return
