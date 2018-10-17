@@ -4,6 +4,11 @@ import discord
 
 @client.member_join
 async def join_notification(member: discord.Member):
+	if "discord.gg" in member.name:
+		try:
+			await member.ban()
+		except:
+			pass
 	if member.guild.id == 364480908528451584:
 		await client.get_channel(473570993072504832).send(f"New member joined the server! Member {len(member.guild.members)}: {member.mention}")
 
