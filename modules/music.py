@@ -206,16 +206,16 @@ async def command(command: str, message: discord.Message):
 			if isinstance(connection, MusicException):
 				# we're not in a channel either
 				# cool, we have no idea what channel they want us to join to
-				await message.channel.send("ambiguous/unknown target channel: please join the target voice channel")
+				await message.channel.send("Ambiguous/unknown target channel: please join the target voice channel")
 				return
 			else:
 				# user's not in a channel but we are already in a channel
-				await message.channel.send("already in a channel (also, next time please join the channel you are referring to first)")
+				await message.channel.send("Already in a channel (also, next time please join the channel you are referring to first)")
 				return
 		if isinstance(connection, MusicException):
 			# user is in there but we're not
 			if isinstance(get_target_voice_connection(message.guild), discord.VoiceClient):
-				await message.channel.send("cannot join channel: already in another channel in this server")
+				await message.channel.send("Cannot join channel: already in another channel in this server")
 				return
 			new_connection = await message.author.voice.channel.connect()
 			guild_channel[message.guild.id] = message.channel
@@ -233,12 +233,16 @@ async def command(command: str, message: discord.Message):
 
 	# add a new song to the queue
 	if parts[1] == "add":
+		try:
+			parts[2]
+		except IndexError:
+			await message.channel.send("Cannot add song to queue: no song given to add")
 		# todo: auth check if user is in voice channel
 		url = command.replace("music add ", "", 1)
 		try:
 			song = Song(url=url, requester=message.author.mention)
 		except Exception:
-			await message.channel.send("error getting song information; song not added to playlist")
+			await message.channel.send("Error getting song information: song not added to queue")
 			log.warning("Unable to add song", include_exception=True)
 			return
 
@@ -253,20 +257,20 @@ async def command(command: str, message: discord.Message):
 	if parts[1] == "play":
 		vc = get_target_voice_connection(message.guild)
 		if not isinstance(vc, discord.VoiceClient):
-			await message.channel.send("cannot play music: not connected to any voice channel")
+			await message.channel.send("Cannot play music: not connected to any voice channel")
 			return
 		if not check_if_user_in_channel(vc.channel, message.author.id):
 			try:
 				await message.add_reaction("❌")
 			except:
 				try:
-					await message.channel.send("command refused: you are not in the target channel")
+					await message.channel.send("Command refused: you are not in the target channel")
 				except:
 					pass
 			finally:
 				return
 		if len(guild_queue.get(message.channel.id, [])) is 0:
-			await message.channel.send("queue empty: nothing to play")
+			await message.channel.send("Queue empty: nothing to play")
 			return
 
 		if vc.is_playing():
@@ -282,7 +286,7 @@ async def command(command: str, message: discord.Message):
 				vc.play(next_up.get_source(message.guild.id))
 			except IndexError:
 				if isinstance(get_target_voice_connection(message.guild), discord.VoiceClient):
-					await message.channel.send("queue exhausted: stopping music playback")
+					await message.channel.send("Queue exhausted: stopping music playback")
 				return
 			except Exception as e:
 				if isinstance(e, IndexError): return
@@ -300,10 +304,10 @@ async def command(command: str, message: discord.Message):
 	if parts[1] == "skip":
 		vc = get_target_voice_connection(message.guild)
 		if not isinstance(vc, discord.VoiceClient):
-			await message.channel.send("cannot skip song: not currently connected to any voice channel")
+			await message.channel.send("Cannot skip song: not currently connected to any voice channel")
 			return
 		if not check_if_user_in_channel(vc.channel, message.author.id):
-			await message.channel.send("command refused: you are not in the target channel")
+			await message.channel.send("Command refused: you are not in the target channel")
 			return
 		vc.stop()
 		await checkmark(message)
@@ -312,10 +316,10 @@ async def command(command: str, message: discord.Message):
 	if parts[1] == "pause":
 		vc = get_target_voice_connection(message.guild)
 		if not isinstance(vc, discord.VoiceClient):
-			await message.channel.send("cannot pause music: not currently connected to any voice channel")
+			await message.channel.send("Cannot pause music: not currently connected to any voice channel")
 			return
 		if not check_if_user_in_channel(vc.channel, message.author.id):
-			await message.channel.send("command refused: you are not in the target voice channel")
+			await message.channel.send("Command refused: you are not in the target voice channel")
 			return
 		if vc.is_paused():
 			vc.resume()
@@ -336,7 +340,7 @@ async def command(command: str, message: discord.Message):
 
 		vc = get_target_voice_connection(message.guild)
 		if not check_if_user_in_channel(vc.channel, message.author):
-			await message.channel.send("command refused: you are not in the target voice channel")
+			await message.channel.send("Command refused: you are not in the target voice channel")
 			await message.add_reaction("❌")
 			return
 		try:
@@ -362,7 +366,7 @@ async def command(command: str, message: discord.Message):
 		except IndexError:
 			target_song = guild_now_playing_song.get(message.guild.id, None)
 			if target_song is None:
-				await message.channel.send("cannot get song information: no song is currently playing and no queue index specified")
+				await message.channel.send("Cannot get song information: no song is currently playing and no queue index specified")
 				return
 			else:
 				await message.channel.send(embed=get_song_embed(target_song, is_next=True))
@@ -371,13 +375,13 @@ async def command(command: str, message: discord.Message):
 		try:
 			index = int(parts[2])
 		except ValueError:
-			await message.channel.send(f"cannot get song info: noninteger queue index (got: {parts[2]})")
+			await message.channel.send(f"Cannot get song info: noninteger queue index (got: {parts[2]})")
 			return
 
 		try:
 			target_song = guild_queue.get(message.guild.id, [])[index-1]
 		except IndexError:
-			await message.channel.send(f"cannot get song info: invalid queue index (queue is shorter than index provided?)")
+			await message.channel.send(f"Cannot get song info: invalid queue index (queue is shorter than index provided?)")
 			return
 
 		await message.channel.send(embed=get_song_embed(target_song, queue_position=index))
@@ -386,7 +390,7 @@ async def command(command: str, message: discord.Message):
 	if parts[1] == "playing":
 		target_song = guild_now_playing_song.get(message.guild.id, None)
 		if target_song is None:
-			await message.channel.send("cannot get song informaiton: no song is currently playing")
+			await message.channel.send("Cannot get song informaiton: no song is currently playing")
 			return
 		else:
 			await message.channel.send(embed=get_song_embed(target_song, is_next=True))
@@ -396,10 +400,10 @@ async def command(command: str, message: discord.Message):
 	if parts[1] in ["exit", "stop", "quit"]:
 		vc = get_target_voice_connection(message.guild)
 		if not isinstance(vc, discord.VoiceClient):
-			await message.channel.send("cannot disconnect from voice channel: not connected to any voice channel to disconnect from")
+			await message.channel.send("Cannot disconnect from voice channel: not connected to any voice channel to disconnect from")
 			return
 		if not check_if_user_in_channel(vc.channel, message.author.id):
-			await message.channel.send("command refused: you are not in the target voice channel")
+			await message.channel.send("Command refused: you are not in the target voice channel")
 			return
 		await vc.disconnect()
 		if parts[2] not in ["--no-clear-queue", "-n"]:
@@ -410,7 +414,7 @@ async def command(command: str, message: discord.Message):
 		force_randomize = "--force-randomize" in command
 		no_force_randomize = "--no-force-randomize" in command
 		if force_randomize and no_force_randomize:
-			await message.channel.send("exception: both --force-randomize and --no-force-randomize passed as arguments")
+			await message.channel.send("Exception: both --force-randomize and --no-force-randomize passed as arguments")
 			return
 
 		command = command.replace(" --force-randomize", "")
@@ -421,19 +425,19 @@ async def command(command: str, message: discord.Message):
 		try:
 			parts[2]
 		except IndexError:
-			await message.channel.send("cannot load playlist: no playlist specified. See command help or source code for help.")
+			await message.channel.send("Cannot load playlist: no playlist specified. See command help or source code for help.")
 			return
 
 		target_filename = f"{parts[2]}.json"
 		if target_filename not in os.listdir(playlist_dir):
-			await message.channel.send("cannot load playlist: no such playlist exists")
+			await message.channel.send("Cannot load playlist: no such playlist exists")
 			return
 
 		try:
 			data = json.load(open(playlist_dir+target_filename, "r"))
 		except Exception as e:
-			log.error("error loading playlist:", include_exception=True)
-			await message.channel.send(f"cannot load playlist: unexpected exception loading playlist: {e.__class__.__name__}: {''.join(e.args)}\n\nThis exception has been logged.")
+			log.error("Error loading playlist:", include_exception=True)
+			await message.channel.send(f"Cannot load playlist: unexpected exception loading playlist: {e.__class__.__name__}: {''.join(e.args)}\n\nThis exception has been logged.")
 			return
 
 		loaded_playlist = data['playlist']
@@ -453,7 +457,7 @@ async def command(command: str, message: discord.Message):
 		try:
 			parts[2]
 		except IndexError:
-			await message.channel.send("argument error: no queue index to remove")
+			await message.channel.send("Argument error: no queue index to remove")
 			return
 
 		clear_all = parts[2] in ["-c", "--clear", "--clear-all"]
@@ -464,7 +468,7 @@ async def command(command: str, message: discord.Message):
 		try:
 			index = int(parts[2])
 		except ValueError:
-			await message.channel.send(f"cannot remove song from queue: invalid integer index (got: {parts[2]})")
+			await message.channel.send(f"Cannot remove song from queue: invalid integer index (got: {parts[2]})")
 			return
 
 		guild_queue[message.channel.id].pop(index-1)
