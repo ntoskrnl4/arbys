@@ -1,0 +1,14 @@
+{
+  "randomize": true,
+  "exponential_extend_iter": 4,
+  "playlist": [
+    "song0",
+    "song1",
+    "song2",
+    "song3",
+    "song4",
+    "song5",
+    "song6",
+    "song7"
+  ]
+}
