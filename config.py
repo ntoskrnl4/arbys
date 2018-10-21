@@ -27,7 +27,7 @@ boot_status = "dnd"
 
 # All the prefixes the bot will use. The first one in this list will be considered the default.
 prefixes = [
-	"ntdev ",
+	"cqdx ",
 	"! ",
 	"!",
 	"<@398599948557615130> ",
