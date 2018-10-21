@@ -24,11 +24,11 @@ client.long_help(cmd="music", mapping=detailed_help)
 
 voice_enable = False
 
-guild_channel: defaultdict[int, discord.TextChannel] = {}
-guild_queue: defaultdict[int, List["Song"]] = defaultdict(list)
-guild_now_playing_song: defaultdict[int, "Song"] = {}
-guild_volume: defaultdict[int, float] = defaultdict(lambda: float(default_volume))
-active_clients: defaultdict[int, discord.VoiceClient] = {}
+guild_channel: Dict[int, discord.TextChannel] = {}
+guild_queue: Dict[int, List["Song"]] = defaultdict(list)
+guild_now_playing_song: Dict[int, "Song"] = {}
+guild_volume: Dict[int, float] = defaultdict(lambda: float(default_volume))
+active_clients: Dict[int, discord.VoiceClient] = {}
 default_volume = 0.5
 
 song_info_embed_colour = 0xbf35e3
