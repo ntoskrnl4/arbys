@@ -109,11 +109,11 @@ def get_song_embed(song, is_next: bool = False, queue_position: int = None):
 
 	duration = "<length unknown>" if song.duration is 0 else f"{song.duration//60}m{song.duration%60}s"
 
-	embed = embed.add_field(name="Title", value=song.title)
-	embed = embed.add_field(name="Reference", value=song.submitted_url)
-	embed = embed.add_field(name="Duration", value=duration)
-	embed = embed.add_field(name="Requester", value=song.requester)
-	embed = embed.add_footer(datetime.utcnow().__str__())
+	embed = embed.add_field(name="Title", value=song.title, inline=False)
+	embed = embed.add_field(name="Reference", value=song.submitted_url, inline=False)
+	embed = embed.add_field(name="Duration", value=duration, inline=False)
+	embed = embed.add_field(name="Requester", value=song.requester, inline=False)
+	embed = embed.set_footer(text=datetime.utcnow().__str__())
 	return embed
 
 
@@ -122,7 +122,6 @@ def get_target_voice_connection(object: Union[discord.Member, discord.Guild, dis
 
 	if isinstance(object, discord.Member):
 		target = getattr(object.voice, "channel", None)
-		return target
 	if isinstance(object, discord.Guild):
 		target = getattr(discord.utils.find(lambda x: x.guild.id == object.id, client.voice_clients), "channel", None)
 	if isinstance(object, discord.VoiceChannel):
@@ -144,7 +143,7 @@ def get_target_voice_connection(object: Union[discord.Member, discord.Guild, dis
 			target = None
 
 	if not isinstance(target, discord.VoiceChannel):
-		return UnknownChannelError("Requested channel is not known")
+		return None
 	# now we know that target is a VoiceChannel
 	if not check_if_user_in_channel(target, client.user.id):
 		# if we're not in the channel
@@ -158,7 +157,7 @@ def get_queue_list(queue):
 	i = 1
 	for song in queue[:20]:
 		duration = "length unknown" if song.duration is 0 else f"{song.duration//60}m{song.duration%60}s"
-		info += f"{'0' if (len(queue) > 9) and (i < 9) else ''}" \
+		info += f"`{'0' if (len(queue) > 9) and (i < 9) else ''}" \
 				f"{i}:` " \
 				f"{song.title} ({duration}) (requested by {song.requester})\n"
 		i += 1
@@ -204,7 +203,7 @@ async def command(command: str, message: discord.Message):
 		if connection is None:
 			# user's not in a channel
 			connection = get_target_voice_connection(message.guild)
-			if isinstance(connection, MusicException):
+			if connection is None:
 				# we're not in a channel either
 				# cool, we have no idea what channel they want us to join to
 				await message.channel.send("Ambiguous/unknown target channel: please join the target voice channel")
@@ -219,7 +218,6 @@ async def command(command: str, message: discord.Message):
 				await message.channel.send("Cannot join channel: already in another channel in this server")
 				return
 			new_connection = await message.author.voice.channel.connect()
-			guild_channel[message.guild.id] = message.channel
 			active_clients[message.guild.id] = new_connection
 			if not await checkmark(message):
 				try:
@@ -250,8 +248,7 @@ async def command(command: str, message: discord.Message):
 		# todo: add warning for sending links with playlists, that they will not get added
 
 		guild_queue[message.guild.id].append(song)
-		guild_channel[message.guild.id] = message.channel
-		guild_channel[message.guild.id].send("Song added to end of queue:", embed=get_song_embed(song, queue_position=len(guild_queue[message.guild.id])))
+		await message.channel.send("Song added to end of queue:", embed=get_song_embed(song, queue_position=len(guild_queue[message.guild.id])))
 		return
 
 	# start playing music for them
@@ -355,8 +352,10 @@ async def command(command: str, message: discord.Message):
 	# see the queue
 	if parts[1] == "queue":
 		embed = discord.Embed(title="Upcoming Music Queue", description=get_queue_list(guild_queue.get(message.guild.id, [])), colour=discord.Embed.Empty)
-		embed = embed.add_field(name="Currently Playing", value=getattr(guild_now_playing_song.get(message.guild.id, ""), "title", "<no song playing>"))
-		embed = embed.add_footer(datetime.utcnow().__str__())
+		currently_playing = guild_now_playing_song.get(message.guild.id, None)
+		if currently_playing is not None:
+			embed = embed.add_field(name="Currently Playing", value=currently_playing.title)
+		embed = embed.set_footer(text=datetime.utcnow().__str__())
 		await message.channel.send(embed=embed)
 		return
 
@@ -391,7 +390,7 @@ async def command(command: str, message: discord.Message):
 	if parts[1] == "playing":
 		target_song = guild_now_playing_song.get(message.guild.id, None)
 		if target_song is None:
-			await message.channel.send("Cannot get song informaiton: no song is currently playing")
+			await message.channel.send("Cannot get song information: no song is currently playing")
 			return
 		else:
 			await message.channel.send(embed=get_song_embed(target_song, is_next=True))
@@ -448,7 +447,7 @@ async def command(command: str, message: discord.Message):
 			random.shuffle(loaded_playlist)
 
 		playlist_objects = [Song(url=x, requester=f"{message.author.mention} from playlist \"{parts[2]}.json\"", noload=True) for x in loaded_playlist]
-		current_queue = guild_queue.get(message.channel.send, None)
+		current_queue = guild_queue[message.guild.id]
 		if current_queue is None:
 			guild_queue[message.guild.id] = []
 		guild_queue[message.guild.id].extend(playlist_objects)
@@ -463,7 +462,7 @@ async def command(command: str, message: discord.Message):
 
 		clear_all = parts[2] in ["-c", "--clear", "--clear-all"]
 		if clear_all:
-			guild_queue[message.channel.send] = []
+			guild_queue[message.guild.id] = []
 			return
 
 		try:
@@ -482,3 +481,9 @@ async def music_capable_check():
 	else:
 		voice_enable = False
 		log.warning("Voice library not loaded for some unknown reason. Music functionality will not work.")
+
+
+@client.shutdown
+async def exit_all_vcs():
+	for vc in client.voice_clients:
+		await vc.disconnect()
