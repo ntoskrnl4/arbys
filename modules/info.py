@@ -20,7 +20,7 @@ client.long_help(cmd=cmd_name, mapping=detailed_help)
 				aliases=[])  # aliases is a list of strs of other triggers for the command
 async def handle(command: str, message: discord.Message):
 	embed = discord.Embed(title=f"{client.cfg_bot_name} info", description=discord.Embed.Empty, color=0x404040)
-	embed = embed.add_field(name="Version", value=f"Framework version {client.__version__}\nBot version 0.6.1-dev")
+	embed = embed.add_field(name="Version", value=f"Framework version {client.__version__}\nBot version 0.7-dev")
 	embed = embed.add_field(name="Creator", value=key.creator)
 	embed = embed.add_field(name="Github", value=key.github_info)
 	embed = embed.add_field(name="Built with", value=key.built_with)
