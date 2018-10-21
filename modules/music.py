@@ -168,11 +168,6 @@ def get_queue_list(queue):
 async def command(command: str, message: discord.Message):
 	global guild_channel, guild_now_playing_song, guild_queue, guild_volume, active_clients
 
-	if "--bypass" not in command:
-		await message.channel.send("Sorry, but this command has been temporarily removed as it is currently being rewritten.")
-		return
-	command = command.replace(" --bypass", "")
-
 	if not voice_enable:
 		await message.channel.send("Sorry, but the internal Opus library required for voice support was not loaded for whatever reason. Music will not work, sorry.")
 		return
