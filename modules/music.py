@@ -122,6 +122,7 @@ def get_target_voice_connection(object: Union[discord.Member, discord.Guild, dis
 
 	if isinstance(object, discord.Member):
 		target = getattr(object.voice, "channel", None)
+		return target
 	if isinstance(object, discord.Guild):
 		target = getattr(discord.utils.find(lambda x: x.guild.id == object.id, client.voice_clients), "channel", None)
 	if isinstance(object, discord.VoiceChannel):
