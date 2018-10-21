@@ -17,7 +17,7 @@ detailed_help = {
 	"Usage": f"{client.default_prefix}music <subcommand> [args]",
 	"Arguments": "`subcommand` - subcommand to run\n`args` - (optional) arguments specific to the subcommand being run",
 	"Description": "This command manages music related functionality within the bot. Music is available to several servers at once.",
-	"Subcommands": "",
+	"Subcommands": "<change me>",  # todo: add subcommands
 }
 client.long_help(cmd="music", mapping=detailed_help)
 
@@ -121,7 +121,7 @@ def get_target_voice_connection(object: Union[discord.Member, discord.Guild, dis
 	target = None
 
 	if isinstance(object, discord.Member):
-		target = object.voice.channel
+		target = getattr(object.voice, "channel", None)
 	if isinstance(object, discord.Guild):
 		target = getattr(discord.utils.find(lambda x: x.guild.id == object.id, client.voice_clients), "channel", None)
 	if isinstance(object, discord.VoiceChannel):
