@@ -347,7 +347,7 @@ async def command(command: str, message: discord.Message):
 	# change the volume
 	if parts[1] == "volume":
 		try:
-			new_vol = float(parts[2])
+			new_vol = float(parts[2])*default_volume
 		except ValueError:
 			await message.channel.send(f"That's not a float. (got: {parts[2]})")
 			return
