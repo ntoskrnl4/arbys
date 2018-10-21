@@ -187,6 +187,12 @@ async def command(command: str, message: discord.Message):
 	# music playing (like above but only for now playing)
 	# music exit/quit/stop
 
+	try:
+		parts[1]
+	except IndexError:
+		await message.channel.send("Subcommand not given. See command help for available subcommands.")
+		return
+
 	if not parts[1] in ["join", "add", "play", "skip", "pause", "volume", "queue", "info", "playing", "exit", "stop", "quit", "load", "remove"]:
 		await message.channel.send("Unknown subcommand (see command help for available subcommands)")
 		return
