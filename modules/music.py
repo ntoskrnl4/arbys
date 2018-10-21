@@ -35,6 +35,19 @@ song_info_embed_colour = 0xbf35e3
 
 playlist_dir = "playlists/"
 
+
+class TrackedFFmpegAudio(discord.FFmpegPCMAudio):
+	def __init__(self, *args, **kwargs):
+		self.timer_raw = 0
+		self.timer = 0
+		super().__init__(*args, **kwargs)
+
+	def read(self):
+		self.timer_raw += 1
+		self.timer += 0.05
+		return super().read()
+
+
 class Song:
 	def __init__(self, url: str, title: str = None, duration: int = None, requester: str = "<unknown requester>", noload: bool = False):
 		self.submitted_url = url
@@ -84,6 +97,10 @@ class Song:
 		self.source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(self.media_url), volume=guild_volume.get(guild_id, default_volume))
 		return self.source
 
+	@property
+	def depth(self):
+		return getattr(self.source, "timer", 0)
+
 
 async def checkmark(message) -> bool:
 	try:
@@ -107,11 +124,12 @@ def get_song_embed(song, is_next: bool = False, queue_position: int = None):
 		position = f"Queue position {queue_position}" if queue_position is not None else discord.Embed.Empty
 		embed = discord.Embed(title="Song Info", description=position, colour=song_info_embed_colour)
 
-	duration = "<length unknown>" if song.duration is 0 else f"{song.duration//60}m{song.duration%60}s"
+	duration = "<length unknown>" if song.duration is 0 else f"{song.duration//60}:{song.duration%60}"
+	through = f"{song.depth//60}:{song.depth%60} / {duration}"
 
 	embed = embed.add_field(name="Title", value=song.title, inline=False)
 	embed = embed.add_field(name="Reference", value=song.submitted_url, inline=False)
-	embed = embed.add_field(name="Duration", value=duration, inline=False)
+	embed = embed.add_field(name="Duration", value=through, inline=False)
 	embed = embed.add_field(name="Requester", value=song.requester, inline=False)
 	embed = embed.set_footer(text=datetime.utcnow().__str__())
 	return embed
@@ -267,7 +285,7 @@ async def command(command: str, message: discord.Message):
 					pass
 			finally:
 				return
-		if len(guild_queue.get(message.channel.id, [])) is 0:
+		if len(guild_queue[message.guild.id]) is 0:
 			await message.channel.send("Queue empty: nothing to play")
 			return
 
@@ -292,7 +310,7 @@ async def command(command: str, message: discord.Message):
 				await message.channel.send("Sorry, there was an unexpected error while playing music.")
 				await vc.disconnect()
 			else:
-				while vc.is_playing():
+				while vc.is_playing() or vc.is_paused():
 					try:
 						await asyncio.sleep(1)
 					except:
@@ -321,9 +339,10 @@ async def command(command: str, message: discord.Message):
 			return
 		if vc.is_paused():
 			vc.resume()
+			await message.add_reaction("▶")
 		else:
 			vc.pause()
-		await checkmark(message)
+			await message.add_reaction("⏸")
 
 	# change the volume
 	if parts[1] == "volume":
@@ -454,6 +473,12 @@ async def command(command: str, message: discord.Message):
 
 	# remove (element) from queue or clear queue
 	if parts[1] == "remove":
+		vc = get_target_voice_connection(message.guild)
+		if vc is not None:
+			# we're in a channel
+			if not check_if_user_in_channel(vc.channel, message.author.id):
+				await message.channel.send("Command refused: you are not in the target voice channel")
+				return
 		try:
 			parts[2]
 		except IndexError:
@@ -471,7 +496,7 @@ async def command(command: str, message: discord.Message):
 			await message.channel.send(f"Cannot remove song from queue: invalid integer index (got: {parts[2]})")
 			return
 
-		guild_queue[message.channel.id].pop(index-1)
+		guild_queue[message.guild.id].pop(index-1)
 
 @client.ready
 async def music_capable_check():
