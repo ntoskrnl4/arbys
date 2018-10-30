@@ -6,6 +6,7 @@ from key import token
 # from modules import X
 
 from modules import _debug
+from modules import ares
 from modules import beef
 from modules import call
 from modules import chicken
