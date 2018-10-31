@@ -14,8 +14,3 @@ class UserBotError(BaseFrameworkError):
 class HandlerError(BaseFrameworkError):
 	"""Raised when there is a problem with a handler function."""
 	pass
-
-
-class TimerException(BaseFrameworkError):
-	"""Raised when the command timer has an exception."""
-	pass
