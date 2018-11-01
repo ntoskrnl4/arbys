@@ -1,6 +1,8 @@
 key.py
 config.py
+image.gif
+
 .idea/
 __pycache__/
-image.gif
+playlists/
 logs/
