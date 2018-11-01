@@ -175,8 +175,8 @@ def get_song_embed(song, is_next: bool = False, queue_position: int = None, is_p
 		position = f"Queue position {queue_position}" if queue_position is not None else discord.Embed.Empty
 		embed = discord.Embed(title="Song Info", description=position, colour=song_info_embed_colour)
 
-	duration = "<length unknown>" if song.duration is 0 else f"{song.duration//60}:{song.duration%60}"
-	through = f"{song.depth//60}:{song.depth%60} / {duration}"
+	duration = "<length unknown>" if song.duration is 0 else f"{song.duration//60}:{'0' if song.duration%60 < 10 else ''}{song.duration%60}"
+	through = f"{song.depth//60}:{'0' if song.depth%60 < 10 else ''}{song.depth%60} / {duration} {'paused' if is_paused else ''}"
 
 	embed = embed.add_field(name="Title", value=song.title, inline=True)
 	embed = embed.add_field(name="Duration", value=through, inline=True)
