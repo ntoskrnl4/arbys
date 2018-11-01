@@ -1,5 +1,5 @@
 # 3.7: from __future__ import annotations
-from typing import List, Callable, Dict, Union
+from typing import List, Callable, Dict
 from prefix import check_prefix
 from exceptions import UserBotError, HandlerError
 
@@ -29,13 +29,13 @@ def log_message(message: discord.Message):
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.3.2-alpha"
+	__version__ = "0.4.0"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
 	_message_handlers: List[Callable[[discord.Message], None]] = []
 	_member_join_handlers: List[Callable[[discord.Member], None]] = []
-	_member_leave_handlers: List[Callable[[discord.Member], None]] = []
+	_member_remove_handlers: List[Callable[[discord.Member], None]] = []
 
 	_command_lookup: Dict[str, Callable[[discord.Message, str], None]] = {}
 
@@ -99,7 +99,7 @@ class FrameworkClient(discord.Client):
 				log.critical("not all member join handlers are coroutines")
 				raise HandlerError("not all member join handlers are coroutines")
 
-			if any([not asyncio.iscoroutinefunction(x) for x in self._member_leave_handlers]):
+			if any([not asyncio.iscoroutinefunction(x) for x in self._member_remove_handlers]):
 				log.critical("not all member leave handlers are coroutines")
 				raise HandlerError(f"not all member leave handlers are coroutines")
 
@@ -141,7 +141,7 @@ class FrameworkClient(discord.Client):
 		for func in self._message_handlers:
 			try:
 				await func(message)
-			except Exception as e:
+			except Exception:
 				log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
 
 		is_cmd, this_prefix = check_prefix(message.content, self.prefixes)
@@ -158,14 +158,14 @@ class FrameworkClient(discord.Client):
 		for func in self._member_join_handlers:
 			try:
 				await func(member)
-			except Exception as e:
+			except Exception:
 				log.warning("Ignoring exception in member_join coroutine (see stack trace below)", include_exception=True)
 
-	async def on_member_leave(self, member: discord.Member):
-		for func in self._member_leave_handlers:
+	async def on_member_remove(self, member: discord.Member):
+		for func in self._member_remove_handlers:
 			try:
 				await func(member)
-			except Exception as e:
+			except Exception:
 				log.warning("Ignoring exception in member_leave coroutine (see stack trace below)", include_exception=True)
 
 	# ==========
@@ -186,11 +186,13 @@ class FrameworkClient(discord.Client):
 			async def new_cmd(command: str, message: discord.Message) -> None:
 				try:
 					self.command_count += 1
-					await func(command, message)  # Gateway back to usercode
+					# The following line is the gateway back into external code
+					await func(command, message)
 				except Exception:
+					timestamp = datetime.datetime.utcnow().__str__()
 					stackdump = traceback.format_exc()
 					embed = discord.Embed(title="Internal error", description=f"There was an error processing the command. Here's the stack trace, if necessary (this is also recorded in the log):\n```{stackdump}```", colour=0xf00000)
-					embed = embed.set_footer(text="Error occurred at " + str(datetime.datetime.utcnow()))
+					embed = embed.set_footer(text="Error occurred at " + timestamp)
 					await message.channel.send(embed=embed)
 					log.error(f"Error processing command: {message.content}", include_exception=True)
 
@@ -208,15 +210,21 @@ class FrameworkClient(discord.Client):
 		log.debug(f"registered new member_join handler {func.__name__}()")
 		return func
 
-	def member_leave(self, func: Callable[[], None]):
-		self._member_leave_handlers.append(func)
-		log.debug(f"registered new member_leave handler {func.__name__}()")
+	def member_remove(self, func: Callable[[], None]):
+		self._member_remove_handlers.append(func)
+		log.debug(f"registered new member_remove handler {func.__name__}()")
 		return func
 
-	def message(self, func: Callable[[], None]):
-		self._message_handlers.append(func)
-		log.debug(f"registered new message handler {func.__name__}()")
-		return func
+	def message(self, receive_self: bool = True):
+		def inner_decorator(func: Callable[[discord.Message], None]):
+			async def wrapped_handler(message: discord.Message):
+				if not receive_self and message.author.id == client.user.id:
+					return
+				await func(message)
+			self._message_handlers.append(func)
+			log.debug(f"registered new message handler {func.__name__}()")
+			return wrapped_handler
+		return inner_decorator
 
 	def ready(self, func: Callable[[], None]):
 		self._ready_handlers.append(func)
@@ -229,13 +237,23 @@ class FrameworkClient(discord.Client):
 		return func
 
 	def basic_help(self, title: str, desc: str, include_prefix: bool = True):
+		# check first that nothing's blank
+		if title.strip() == "" or desc.strip() == "":
+			log.critical("Blank content in help message: running the help command with this blank content *will* throw an error. Traceback logged under debug level.")
+			log.debug("".join(traceback.format_stack()))
+
 		if include_prefix:
 			self._basic_help.update({f"{self.default_prefix}{title}": desc})
 		else:
 			self._basic_help.update({f"{title}": desc})
 		log.debug(f"registered new basic_help entry under the title {title}")
 
-	def long_help(self, cmd: str, mapping: dict):
+	def long_help(self, cmd: str, mapping: Dict[str, str]):
+		if cmd.strip() == "" or "" in [x.strip() for x in [item for item in mapping.items()]]:
+			# if any blank values, throw an error
+			log.critical("Blank content in help message: running the help command with this blank content *will* throw an error. Traceback logged under debug level.")
+			log.debug("".join(traceback.format_stack()))
+
 		self._long_help[cmd] = mapping
 		log.debug(f"registered new long_help entry for command {cmd}")
 
