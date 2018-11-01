@@ -7,7 +7,10 @@ import youtube_dl
 import asyncio
 import discord
 import random
+import socket
+import urllib
 import json
+import time
 import log
 import os
 
@@ -21,7 +24,6 @@ detailed_help = {
 }
 client.long_help(cmd="music", mapping=detailed_help)
 
-
 voice_enable = False
 
 guild_channel: Dict[int, discord.TextChannel] = {}
@@ -29,6 +31,7 @@ guild_queue: Dict[int, List["Song"]] = defaultdict(list)
 guild_now_playing_song: Dict[int, "Song"] = {}
 guild_volume: Dict[int, float] = defaultdict(lambda: float(default_volume))
 active_clients: Dict[int, discord.VoiceClient] = {}
+
 default_volume = 0.5
 
 song_info_embed_colour = 0xbf35e3
@@ -36,15 +39,57 @@ song_info_embed_colour = 0xbf35e3
 playlist_dir = "playlists/"
 
 
-class TrackedFFmpegAudio(discord.FFmpegPCMAudio):
+
+
+def get_flac_data(url: str):
+	try:
+		url = urllib.parse.urlparse(url)
+		ip = url.hostname
+		port = url.port
+		filename = url.path
+		try:
+			remote = socket.create_connection((ip, port), timeout=1.0)
+		except:
+			log.warning("Could not connect to retrieve FLAC header")
+			return
+		req = b"GET filename HTTP/1.1\r\n\r\n"
+		req = req.replace(b"filename", filename.encode())
+		remote.send(req)
+		time.sleep(0.01)
+		data_in = remote.recv(256)
+		flac_beginning = data_in[data_in.index(b"fLaC"):]
+
+		raw = bytearray(flac_beginning)
+		# now we can start bitparsing the header by hand
+
+		header_length = int((raw[5] << 16) | (raw[6] << 8) | raw[7])
+		min_blocksize = int((raw[8] << 8) | raw[9])
+		max_blocksize = int((raw[10] << 8) | raw[11])
+		min_framesize = int((raw[12] << 16) | (raw[13] << 8) | raw[14])
+		max_framesize = int((raw[15] << 16) | (raw[16] << 8) | raw[17])
+		sample_rate = int(bin((raw[18] << 16) | (raw[19] << 8) | raw[20])[2:-4], base=2)
+		num_channels = ((raw[20] & 0b00001110) >> 1) + 1
+		bits_per_sample = ((raw[20]&1) << 4) | (raw[21] >> 4) + 1
+		num_samples = (((raw[21] & 0xF) << 32) | (raw[22] << 24) | (raw[23] << 16) | (raw[24] << 8) | raw[25])
+		length_sec = num_samples / sample_rate
+		return {
+			"title": filename[1:].replace(".flac", ""),
+			"duration": int(length_sec)
+		}
+	except:
+		return None
+
+
+class TrackingVolumeTransformer(discord.PCMVolumeTransformer):
 	def __init__(self, *args, **kwargs):
-		self.timer_raw = 0
 		self.timer = 0
+		self.reads = 0
 		super().__init__(*args, **kwargs)
 
 	def read(self):
-		self.timer_raw += 1
-		self.timer += 0.05
+		self.reads += 1
+		if self.reads % 50 is 0:
+			self.timer += 1
 		return super().read()
 
 
@@ -66,6 +111,12 @@ class Song:
 				self.media_url = ""
 			else:
 				self.media_url = formats[0].get("url", "")
+
+			if self.submitted_url.endswith(".flac"):
+				data = get_flac_data(self.submitted_url)
+				self.title = data["title"]
+				self.duration = data["duration"]
+
 			self.loaded = True
 
 		if noload:
@@ -94,7 +145,7 @@ class Song:
 	def get_source(self, guild_id: int):
 		"""Get an AudioSource object for the song."""
 		if self.source is not None: return self.source
-		self.source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(self.media_url), volume=guild_volume.get(guild_id, default_volume))
+		self.source = TrackingVolumeTransformer(discord.FFmpegPCMAudio(self.media_url), volume=guild_volume[guild_id])
 		return self.source
 
 	@property
@@ -116,7 +167,7 @@ def check_if_user_in_channel(channel: discord.VoiceChannel, user: Union[discord.
 	return getattr(user, "id", user) in [x.id for x in channel.members]
 
 
-def get_song_embed(song, is_next: bool = False, queue_position: int = None):
+def get_song_embed(song, is_next: bool = False, queue_position: int = None, is_paused: bool = False):
 	if not song.loaded: song.load()
 	if is_next:
 		embed = discord.Embed(title="Now Playing", description=discord.Embed.Empty, colour=song_info_embed_colour)
@@ -127,10 +178,10 @@ def get_song_embed(song, is_next: bool = False, queue_position: int = None):
 	duration = "<length unknown>" if song.duration is 0 else f"{song.duration//60}:{song.duration%60}"
 	through = f"{song.depth//60}:{song.depth%60} / {duration}"
 
-	embed = embed.add_field(name="Title", value=song.title, inline=False)
+	embed = embed.add_field(name="Title", value=song.title, inline=True)
+	embed = embed.add_field(name="Duration", value=through, inline=True)
+	embed = embed.add_field(name="Requester", value=song.requester, inline=True)
 	embed = embed.add_field(name="Reference", value=song.submitted_url, inline=False)
-	embed = embed.add_field(name="Duration", value=through, inline=False)
-	embed = embed.add_field(name="Requester", value=song.requester, inline=False)
 	embed = embed.set_footer(text=datetime.utcnow().__str__())
 	return embed
 
@@ -170,16 +221,19 @@ def get_target_voice_connection(object: Union[discord.Member, discord.Guild, dis
 		return discord.utils.find(lambda x: x.channel.id == target.id, client.voice_clients)
 
 
-def get_queue_list(queue):
-	info = f"Next {'20' if len(queue) > 20 else len(queue)} items in queue:\n"
+def get_queue_list(queue, length=20):
+	info = f"Next {length if len(queue) > length else len(queue)} items in queue:\n"
 	i = 1
-	for song in queue[:20]:
+	for song in queue[:length]:
 		duration = "length unknown" if song.duration is 0 else f"{song.duration//60}m{song.duration%60}s"
-		info += f"`{'0' if (len(queue) > 9) and (i < 9) else ''}" \
+		info += f"`{'0' if (len(queue) > 9) and (i < 10) else ''}" \
 				f"{i}:` " \
 				f"{song.title} ({duration}) (requested by {song.requester})\n"
 		i += 1
-	return info
+	if len(info) > 2048:
+		return get_queue_list(queue=queue, length=length-1)  # crossing fingers we don't get any issues
+	else:
+		return info
 
 
 @client.command(trigger="music")
@@ -206,7 +260,7 @@ async def command(command: str, message: discord.Message):
 	# music exit/quit/stop
 
 	try:
-		parts[1]
+		parts[1] = parts[1].lower()
 	except IndexError:
 		await message.channel.send("Subcommand not given. See command help for available subcommands.")
 		return
@@ -235,8 +289,33 @@ async def command(command: str, message: discord.Message):
 			if isinstance(get_target_voice_connection(message.guild), discord.VoiceClient):
 				await message.channel.send("Cannot join channel: already in another channel in this server")
 				return
-			new_connection = await message.author.voice.channel.connect()
+
+			user_state = message.author.voice
+			if user_state is None:
+				await message.channel.send("error: user voice status changed between two subsequent calls to retrieve user's channel")
+				return
+
+			channel_perms = user_state.channel.permissions_for(message.guild.me)
+			if not channel_perms.connect:
+				await message.channel.send("Cannot join channel: insufficient permissions to even connect to the channel")
+				return
+			if channel_perms.connect and not channel_perms.speak:
+				await message.channel.send("Refusing to join channel: insufficient permissions to send voice data in target channel")
+				return
+
+			try:
+				new_connection = await message.author.voice.channel.connect(timeout=5.0)
+			except discord.errors.ClientException:
+				# d.py said we weren't in a channel but we were >:( damn liar
+				await asyncio.sleep(0.1)
+				try:
+					new_connection = await message.author.voice.channel.connect(timeout=5.0)
+				except discord.errors.ClientException:
+					await message.channel.send("Sorry, but for an unknown reason Discord.py will not permit us to connect because it thinks we are already connected.\nTry running `music exit --force-all` while still in the channel to attempt to disconnect from all channels.")
+					return
+
 			active_clients[message.guild.id] = new_connection
+			new_connection.stop()
 			if not await checkmark(message):
 				try:
 					await message.channel.send("Joined the channel")
@@ -271,6 +350,7 @@ async def command(command: str, message: discord.Message):
 
 	# start playing music for them
 	if parts[1] == "play":
+		# todo: if paused, resume instead
 		vc = get_target_voice_connection(message.guild)
 		if not isinstance(vc, discord.VoiceClient):
 			await message.channel.send("Cannot play music: not connected to any voice channel")
@@ -308,7 +388,8 @@ async def command(command: str, message: discord.Message):
 				if isinstance(e, IndexError): return
 				log.error("Unexpected error during music playback", include_exception=True)
 				await message.channel.send("Sorry, there was an unexpected error while playing music.")
-				await vc.disconnect()
+				await vc.disconnect(force=True)
+				del guild_now_playing_song[message.guild.id]
 			else:
 				while vc.is_playing() or vc.is_paused():
 					try:
@@ -356,16 +437,17 @@ async def command(command: str, message: discord.Message):
 			return
 
 		vc = get_target_voice_connection(message.guild)
-		if not check_if_user_in_channel(vc.channel, message.author):
-			await message.channel.send("Command refused: you are not in the target voice channel")
-			await message.add_reaction("❌")
-			return
+		if vc is not None:
+			if not check_if_user_in_channel(vc.channel, message.author):
+				await message.channel.send("Command refused: you are not in the target voice channel")
+				await message.add_reaction("❌")
+				return
 		try:
 			vc.source.volume = new_vol
 		except:
 			pass
 		finally:
-			guild_volume[message.channel.guild] = new_vol
+			guild_volume[message.guild.id] = new_vol
 			await checkmark(message)
 
 	# see the queue
@@ -380,6 +462,9 @@ async def command(command: str, message: discord.Message):
 
 	# see information about a song in the queue
 	if parts[1] == "info":
+		if not isinstance(get_target_voice_connection(message.guild), discord.VoiceClient):
+			await message.channel.send("Not currently connected to voice chat")
+			return
 		try:
 			parts[2]
 		except IndexError:
@@ -388,7 +473,7 @@ async def command(command: str, message: discord.Message):
 				await message.channel.send("Cannot get song information: no song is currently playing and no queue index specified")
 				return
 			else:
-				await message.channel.send(embed=get_song_embed(target_song, is_next=True))
+				await message.channel.send(embed=get_song_embed(target_song, is_next=True, is_paused=get_target_voice_connection(message.guild).is_paused()))
 				return
 
 		try:
@@ -407,25 +492,45 @@ async def command(command: str, message: discord.Message):
 
 	# see information about what is currently playing
 	if parts[1] == "playing":
+		if not isinstance(get_target_voice_connection(message.guild), discord.VoiceClient):
+			await message.channel.send("Not currently connected to voice chat")
+			return
 		target_song = guild_now_playing_song.get(message.guild.id, None)
 		if target_song is None:
-			await message.channel.send("Cannot get song information: no song is currently playing")
+			await message.channel.send("Not currently playing any song")
 			return
 		else:
-			await message.channel.send(embed=get_song_embed(target_song, is_next=True))
+			await message.channel.send(embed=get_song_embed(target_song, is_next=True, is_paused=get_target_voice_connection(message.guild).is_paused()))
 			return
 
 	# bye
 	if parts[1] in ["exit", "stop", "quit"]:
+		try:
+			all = (parts[2] == "--force-all")
+		except IndexError:
+			all = False
 		vc = get_target_voice_connection(message.guild)
 		if not isinstance(vc, discord.VoiceClient):
 			await message.channel.send("Cannot disconnect from voice channel: not connected to any voice channel to disconnect from")
 			return
-		if not check_if_user_in_channel(vc.channel, message.author.id):
-			await message.channel.send("Command refused: you are not in the target voice channel")
-			return
-		await vc.disconnect()
-		if parts[2] not in ["--no-clear-queue", "-n"]:
+		if vc.channel.members != [vc.guild.me]:
+			if not check_if_user_in_channel(vc.channel, message.author.id):
+				await message.channel.send("Command refused: you are not in the target voice channel")
+				return
+		if not all:
+			await vc.disconnect(force=True)
+			del guild_now_playing_song[message.guild.id]
+		if all:
+			for vc in client.voice_clients:
+				if vc.guild.id == message.guild.id:
+					await vc.disconnect(force=True)
+		try:
+			parts[2]
+		except IndexError:
+			clear_queue = True
+		else:
+			clear_queue = parts[2] not in ["--no-clear-queue", "-n"]
+		if clear_queue:
 			guild_queue[message.guild.id] = []
 
 	# load a queue from a json file
@@ -465,11 +570,16 @@ async def command(command: str, message: discord.Message):
 		if (data['randomize'] or force_randomize) and not no_force_randomize:
 			random.shuffle(loaded_playlist)
 
-		playlist_objects = [Song(url=x, requester=f"{message.author.mention} from playlist \"{parts[2]}.json\"", noload=True) for x in loaded_playlist]
+		playlist_objects = []
+		errored = False
+		for song in loaded_playlist:
+			playlist_objects.append(Song(url=song, requester=f"{message.author.mention} from playlist \"{parts[2]}.json\"", noload=True))
+
 		current_queue = guild_queue[message.guild.id]
 		if current_queue is None:
 			guild_queue[message.guild.id] = []
 		guild_queue[message.guild.id].extend(playlist_objects)
+		await message.channel.send(f"Loaded {len(playlist_objects)} from playlist `{parts[2]}.json`")
 
 	# remove (element) from queue or clear queue
 	if parts[1] == "remove":

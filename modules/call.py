@@ -29,7 +29,7 @@ async def command(command: str, message: discord.Message):
 		data = requests.get(f"https://callook.info/{requested_call}/json").json()
 		if data["status"] == "INVALID":
 			embed = discord.Embed(title=f"Callsign lookup for {requested_call}", description="No such callsign.", colour=0xdb6415)
-			embed = embed.set_footer(text=f"Lookup requested by @{message.author.name}#{message.author.discriminator} at {datetime.utcnow.__str__()}")
+			embed = embed.set_footer(text=f"Lookup requested by @{message.author.name}#{message.author.discriminator} at {datetime.utcnow().__str__()}")
 		if data["status"] == "VALID":
 			embed = discord.Embed(title=f"Callsign lookup for {requested_call}", description=discord.Embed.Empty, colour=0x06b206)
 			embed = embed.add_field(name="Callsign", value=data["current"]["callsign"])
