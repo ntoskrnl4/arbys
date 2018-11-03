@@ -62,14 +62,14 @@ def get_flac_data(url: str):
 		raw = bytearray(flac_beginning)
 		# now we can start bitparsing the header by hand
 
-		header_length = int((raw[5] << 16) | (raw[6] << 8) | raw[7])
-		min_blocksize = int((raw[8] << 8) | raw[9])
-		max_blocksize = int((raw[10] << 8) | raw[11])
-		min_framesize = int((raw[12] << 16) | (raw[13] << 8) | raw[14])
-		max_framesize = int((raw[15] << 16) | (raw[16] << 8) | raw[17])
+		# header_length = int((raw[5] << 16) | (raw[6] << 8) | raw[7])
+		# min_blocksize = int((raw[8] << 8) | raw[9])
+		# max_blocksize = int((raw[10] << 8) | raw[11])
+		# min_framesize = int((raw[12] << 16) | (raw[13] << 8) | raw[14])
+		# max_framesize = int((raw[15] << 16) | (raw[16] << 8) | raw[17])
 		sample_rate = int(bin((raw[18] << 16) | (raw[19] << 8) | raw[20])[2:-4], base=2)
-		num_channels = ((raw[20] & 0b00001110) >> 1) + 1
-		bits_per_sample = ((raw[20]&1) << 4) | (raw[21] >> 4) + 1
+		# num_channels = ((raw[20] & 0b00001110) >> 1) + 1
+		# bits_per_sample = ((raw[20]&1) << 4) | (raw[21] >> 4) + 1
 		num_samples = (((raw[21] & 0xF) << 32) | (raw[22] << 24) | (raw[23] << 16) | (raw[24] << 8) | raw[25])
 		length_sec = num_samples / sample_rate
 		return {

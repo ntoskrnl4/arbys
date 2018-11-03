@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plot
 from typing import List, Dict, Union
 from collections import Counter
 from modules import __common__
@@ -9,6 +8,13 @@ import asyncio
 import log
 import os
 import re  # wish me luck
+
+try:
+	from matplotlib import pyplot as plot
+except ImportError:
+	use_mpl = False
+else:
+	use_mpl = True
 
 detailed_help = {
 	"Usage": f"{client.default_prefix}logstat <days> <stat> [count]",
@@ -94,6 +100,7 @@ def match_user_id(string) -> Union[int, None]:
 
 @client.command(trigger="logstat")
 async def logstat(command: str, message: discord.Message):
+	global use_mpl
 	if not __common__.check_permission(message.author):
 		await message.add_reaction("❌")
 		return
@@ -167,9 +174,7 @@ async def logstat(command: str, message: discord.Message):
 		try:
 			parts.pop(parts.index("--text"))
 		except ValueError:
-			use_text = False
-		else:
-			use_text = True
+			use_mpl = True if use_mpl else False
 
 		if len(parts) < 3:
 			await message.channel.send("Not enough arguments provided to command. See help for help.")
@@ -221,7 +226,7 @@ async def logstat(command: str, message: discord.Message):
 			await message.channel.send("Unknown item to get records for. See help for help.")
 			return
 
-		if use_text:
+		if use_mpl:
 			data = ""
 			i = 0
 			for x, y in top_mentions:
@@ -234,7 +239,7 @@ async def logstat(command: str, message: discord.Message):
 				await message.channel.send("Looks like that information was too long to post, sorry. It's been dumped to the log instead.")
 				log.info(f"logstat command could not be output back (too many items). here's the data:\n{data}")
 
-		if not use_text:
+		if not use_mpl:
 			plot.rcdefaults()
 			plot.rcParams.update({'figure.autolayout': True})
 			figure, ax = plot.subplots()
