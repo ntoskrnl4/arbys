@@ -249,7 +249,7 @@ class FrameworkClient(discord.Client):
 		log.debug(f"registered new basic_help entry under the title {title}")
 
 	def long_help(self, cmd: str, mapping: Dict[str, str]):
-		if cmd.strip() == "" or "" in [x.strip() for x in [item for item in mapping.items()]]:
+		if cmd.strip() == "" or "" in list(mapping.values()) + list(mapping.keys()):
 			# if any blank values, throw an error
 			log.critical("Blank content in help message: running the help command with this blank content *will* throw an error. Traceback logged under debug level.")
 			log.debug("".join(traceback.format_stack()))
