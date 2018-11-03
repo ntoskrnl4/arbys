@@ -427,28 +427,32 @@ async def command(command: str, message: discord.Message):
 
 	# change the volume
 	if parts[1] == "volume":
-		try:
-			new_vol = float(parts[2])*default_volume
-		except ValueError:
-			await message.channel.send(f"That's not a float. (got: {parts[2]})")
+		if float(parts[2]) == NaN:
+			await message.channel.send(f"That's not a number. (got: {parts[2]})")
 			return
-		except IndexError:
-			await message.channel.send("New volume not supplied. See command help for help.")
-			return
-
-		vc = get_target_voice_connection(message.guild)
-		if vc is not None:
-			if not check_if_user_in_channel(vc.channel, message.author):
-				await message.channel.send("Command refused: you are not in the target voice channel")
-				await message.add_reaction("❌")
+		else:
+			try:
+				new_vol = float(parts[2])*default_volume
+			except ValueError:
+				await message.channel.send(f"That's not a float. (got: {parts[2]})")
 				return
-		try:
-			vc.source.volume = new_vol
-		except:
-			pass
-		finally:
-			guild_volume[message.guild.id] = new_vol
-			await checkmark(message)
+			except IndexError:
+				await message.channel.send("New volume not supplied. See command help for help.")
+				return
+
+			vc = get_target_voice_connection(message.guild)
+			if vc is not None:
+				if not check_if_user_in_channel(vc.channel, message.author):
+					await message.channel.send("Command refused: you are not in the target voice channel")
+					await message.add_reaction("❌")
+					return
+			try:
+				vc.source.volume = new_vol
+			except:
+				pass
+			finally:
+				guild_volume[message.guild.id] = new_vol
+				await checkmark(message)
 
 	# see the queue
 	if parts[1] == "queue":
