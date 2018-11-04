@@ -3,7 +3,7 @@ import discord
 import key
 
 
-@client.message
+@client.message()
 async def ft8_checker(message: discord.Message):
 	if (message.guild.id == 364480908528451584) and ("uwu" in message.content.lower().replace(" ", "")):
 		try:

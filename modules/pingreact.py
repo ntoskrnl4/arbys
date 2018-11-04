@@ -2,7 +2,7 @@ from prefix import check_prefix
 from client import client
 import discord
 
-@client.message
+@client.message()
 async def ping_reaction(message: discord.Message):
 	is_cmd, _ = check_prefix(message.content, client.prefixes)
 	if not is_cmd:

@@ -19,7 +19,7 @@ detailed_help = {
 client.long_help(cmd="exit", mapping=detailed_help)
 
 
-@client.command(trigger="exit")
+@client.command(trigger="kill", aliases=["exit"])
 async def command(command: str, message: discord.Message):
 	if not __common__.check_permission(message.author):
 		await message.add_reaction("❌")
@@ -43,7 +43,7 @@ async def command(command: str, message: discord.Message):
 	return
 
 
-@client.command(trigger="_exit")
+@client.command(trigger="_kill", aliases=["_exit"])
 async def emergency_suicide(command: str, message: discord.Message):
 	if not __common__.check_permission(message.author):
 		await message.add_reaction("❌")

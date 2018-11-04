@@ -2,7 +2,7 @@ from client import client
 import discord
 
 
-@client.message
+@client.message()
 async def nou(message: discord.Message):
 	if message.content.lower().endswith("arbys shut down"):
 		try:

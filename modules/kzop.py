@@ -6,7 +6,7 @@ import key
 
 client.basic_help(title="kzop", desc="returns the time until Caleb/KZ0P's return from his two year leave")
 
-@client.message
+@client.message()
 async def info_response(message: discord.Message):
 	if any([x in message.content for x in key.kzop_mentions]):
 		try:
