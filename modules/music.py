@@ -269,6 +269,55 @@ async def command(command: str, message: discord.Message):
 		await message.channel.send("Unknown subcommand (see command help for available subcommands)")
 		return
 
+	# start playing music for them
+	if parts[1] == "play":
+			# todo: if paused, resume instead
+			vc = get_target_voice_connection(message.guild)
+			if not isinstance(vc, discord.VoiceClient):
+				await message.channel.send("Cannot play music: not connected to any voice channel")
+				return
+			if not check_if_user_in_channel(vc.channel, message.author.id):
+				try:
+					await message.add_reaction("❌")
+				except:
+					try:
+						await message.channel.send("Command refused: you are not in the target channel")
+					except:
+						pass
+				finally:
+					return
+			if len(guild_queue[message.guild.id]) is 0:
+				await message.channel.send("Queue empty: nothing to play")
+				return
+
+			if vc.is_playing():
+				# we're already playing something
+				await message.channel.send("Already playing music.")
+				return
+
+			while True:
+				try:
+					next_up = guild_queue[message.guild.id].pop(0)
+					guild_now_playing_song[message.guild.id] = next_up
+					await message.channel.send(embed=get_song_embed(next_up, is_next=True))
+					vc.play(next_up.get_source(message.guild.id))
+				except IndexError:
+					if isinstance(get_target_voice_connection(message.guild), discord.VoiceClient):
+						await message.channel.send("Queue exhausted: stopping music playback")
+					return
+				except Exception as e:
+					if isinstance(e, IndexError): return
+					log.error("Unexpected error during music playback", include_exception=True)
+					await message.channel.send("Sorry, there was an unexpected error while playing music.")
+					await vc.disconnect(force=True)
+					del guild_now_playing_song[message.guild.id]
+				else:
+					while vc.is_playing() or vc.is_paused():
+						try:
+							await asyncio.sleep(1)
+						except:
+							pass
+
 	async with access_lock:
 		# join their voice channel
 		if parts[1] == "join":
@@ -348,55 +397,6 @@ async def command(command: str, message: discord.Message):
 			guild_queue[message.guild.id].append(song)
 			await message.channel.send("Song added to end of queue:", embed=get_song_embed(song, queue_position=len(guild_queue[message.guild.id])))
 			return
-
-		# start playing music for them
-		if parts[1] == "play":
-			# todo: if paused, resume instead
-			vc = get_target_voice_connection(message.guild)
-			if not isinstance(vc, discord.VoiceClient):
-				await message.channel.send("Cannot play music: not connected to any voice channel")
-				return
-			if not check_if_user_in_channel(vc.channel, message.author.id):
-				try:
-					await message.add_reaction("❌")
-				except:
-					try:
-						await message.channel.send("Command refused: you are not in the target channel")
-					except:
-						pass
-				finally:
-					return
-			if len(guild_queue[message.guild.id]) is 0:
-				await message.channel.send("Queue empty: nothing to play")
-				return
-
-			if vc.is_playing():
-				# we're already playing something
-				await message.channel.send("Already playing music.")
-				return
-
-			while True:
-				try:
-					next_up = guild_queue[message.guild.id].pop(0)
-					guild_now_playing_song[message.guild.id] = next_up
-					await message.channel.send(embed=get_song_embed(next_up, is_next=True))
-					vc.play(next_up.get_source(message.guild.id))
-				except IndexError:
-					if isinstance(get_target_voice_connection(message.guild), discord.VoiceClient):
-						await message.channel.send("Queue exhausted: stopping music playback")
-					return
-				except Exception as e:
-					if isinstance(e, IndexError): return
-					log.error("Unexpected error during music playback", include_exception=True)
-					await message.channel.send("Sorry, there was an unexpected error while playing music.")
-					await vc.disconnect(force=True)
-					del guild_now_playing_song[message.guild.id]
-				else:
-					while vc.is_playing() or vc.is_paused():
-						try:
-							await asyncio.sleep(1)
-						except:
-							pass
 
 		# skip the current song
 		if parts[1] == "skip":
