@@ -230,7 +230,7 @@ async def logstat(command: str, message: discord.Message):
 		if not use_mpl:
 			data = ""
 			i = 0
-			for x, y in top_mentions:
+			for x, y in top_mentions.items():
 				i += 1
 				data += f"`{'0' if i < 100 else ''}{'0' if i < 10 else ''}{str(i)}: {'0' if y < 10000 else ''}{'0' if y < 1000 else ''}{'0' if y < 100 else ''}{'0' if y < 10 else ''}{str(y)} messages:` {x}\n"
 			embed = discord.Embed(title=f"Logfile statistics for past {int(parts[1])} days", description=f"Here are the top {scoreboard} {item} in this server, sorted by number of messages.\n"+data)
