@@ -51,6 +51,11 @@ async def statistics(command: str, message: discord.Message):
 		up = time.perf_counter() - client.first_execution
 		await message.channel.send(f"Uptime:\n`{up:.3f}` seconds\n`{up/86400:.4f}` days")
 		return
+
+	if "--pid" in command:
+		await message.channel.send(f"Bot process ID: {os.getpid()}")
+		return
+
 	async with message.channel.typing():
 
 		if has_psutil:
