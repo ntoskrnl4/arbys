@@ -429,6 +429,9 @@ async def command(command: str, message: discord.Message):
 	if parts[1] == "volume":
 		try:
 			new_vol = float(parts[2])*default_volume
+			if message.author.id == 389415987402899459 and new_vol > 0.4:
+				await message.channel.send("not happening")
+				return
 		except ValueError:
 			await message.channel.send(f"That's not a float. (got: {parts[2]})")
 			return
