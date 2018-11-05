@@ -173,6 +173,7 @@ async def logstat(command: str, message: discord.Message):
 		# check if they want textual format
 		try:
 			parts.pop(parts.index("--text"))
+			use_mpl = False
 		except ValueError:
 			use_mpl = True if use_mpl else False
 
@@ -226,7 +227,7 @@ async def logstat(command: str, message: discord.Message):
 			await message.channel.send("Unknown item to get records for. See help for help.")
 			return
 
-		if use_mpl:
+		if not use_mpl:
 			data = ""
 			i = 0
 			for x, y in top_mentions:
@@ -239,7 +240,7 @@ async def logstat(command: str, message: discord.Message):
 				await message.channel.send("Looks like that information was too long to post, sorry. It's been dumped to the log instead.")
 				log.info(f"logstat command could not be output back (too many items). here's the data:\n{data}")
 
-		if not use_mpl:
+		if use_mpl:
 			plot.rcdefaults()
 			plot.rcParams.update({'figure.autolayout': True})
 			figure, ax = plot.subplots()
