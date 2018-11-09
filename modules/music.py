@@ -292,8 +292,14 @@ async def command(command: str, message: discord.Message):
 
 			if vc.is_playing():
 				# we're already playing something
-				await message.channel.send("Already playing music.")
-				return
+				vc = get_target_voice_connection(message.guild)
+				if not isinstance(vc, discord.VoiceClient):
+					await message.channel.send("Cannot unpause music: not currently connected to any voice channel")
+					return
+				if not check_if_user_in_channel(vc.channel, message.author.id):
+					await message.channel.send("Command refused: you are not in the target voice channel")
+					return
+				vc.resume()
 
 			while True:
 				try:
@@ -456,6 +462,12 @@ async def command(command: str, message: discord.Message):
 
 		# see the queue
 		if parts[1] == "queue":
+			try:
+				if parts[2] == "--clear":
+					guild_queue[message.guild.id] = []
+					return
+			except IndexError:
+				pass
 			embed = discord.Embed(title="Upcoming Music Queue", description=get_queue_list(guild_queue.get(message.guild.id, [])), colour=discord.Embed.Empty)
 			currently_playing = guild_now_playing_song.get(message.guild.id, None)
 			if currently_playing is not None:
@@ -585,6 +597,10 @@ async def command(command: str, message: discord.Message):
 			guild_queue[message.guild.id].extend(playlist_objects)
 			await message.channel.send(f"Loaded {len(playlist_objects)} from playlist `{parts[2]}.json`")
 
+		# purge queue
+		if parts[1] == "clear":
+			guild_queue[message.guild.id] = []
+			return
 		# remove (element) from queue or clear queue
 		if parts[1] == "remove":
 			vc = get_target_voice_connection(message.guild)
