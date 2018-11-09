@@ -21,6 +21,9 @@ async def command(command: str, message: discord.Message):
 	try:
 		try:
 			u = await client.get_user_info(__common__.stripMentionsToID(command[6:]))
+		except TypeError:
+			await message.channel.send("Invalid argument: integer ID or mentions are acceptable")
+			return
 		except:
 			isUser = False
 		else:
