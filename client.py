@@ -1,5 +1,5 @@
 # 3.7: from __future__ import annotations
-from typing import List, Callable, Dict
+from typing import List, Callable, Dict, Union
 from prefix import check_prefix
 from exceptions import UserBotError, HandlerError
 
@@ -29,13 +29,15 @@ def log_message(message: discord.Message):
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.4.0"
+	__version__ = "0.4.1"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
 	_message_handlers: List[Callable[[discord.Message], None]] = []
 	_member_join_handlers: List[Callable[[discord.Member], None]] = []
 	_member_remove_handlers: List[Callable[[discord.Member], None]] = []
+	_reaction_add_handlers: List[Callable[[discord.Reaction, Union[discord.User, discord.Member]], None]] = []
+	_reaction_remove_handlers: List[Callable[[discord.Reaction, Union[discord.User, discord.Member]], None]] = []
 
 	_command_lookup: Dict[str, Callable[[discord.Message, str], None]] = {}
 
@@ -103,6 +105,14 @@ class FrameworkClient(discord.Client):
 				log.critical("not all member leave handlers are coroutines")
 				raise HandlerError(f"not all member leave handlers are coroutines")
 
+			if any([not asyncio.iscoroutinefunction(x) for x in self._reaction_add_handlers]):
+				log.critical("not all reaction add handlers are coroutines")
+				raise HandlerError(f"not all reaction add handlers are coroutines")
+
+			if any([not asyncio.iscoroutinefunction(x) for x in self._reaction_remove_handlers]):
+				log.critical("not all reaction remove handlers are coroutines")
+				raise HandlerError(f"not all reaction remove handlers are coroutines")
+
 			log.debug("all functions good to run (are coroutines)")
 
 		log.info(f"Bot started at {str(self.first_execution_dt)} ({self.first_execution})")
@@ -153,6 +163,20 @@ class FrameworkClient(discord.Client):
 				await message.channel.send("`Bad command or file name`\n(See bot help for help)")
 				return
 			await self._command_lookup[run_by](command, message)
+
+	async def on_reaction_add(self, reaction: discord.Reaction, source: Union[discord.User, discord.Member]):
+		for func in self._reaction_add_handlers:
+			try:
+				await func(reaction, source)
+			except Exception:
+				log.warning("Ignoring exception in reaction_add coroutine (see stack trace below)", include_exception=True)
+
+	async def on_reaction_remove(self, reaction: discord.Reaction, source: Union[discord.User, discord.Member]):
+		for func in self._reaction_remove_handlers:
+			try:
+				await func(reaction, source)
+			except Exception:
+				log.warning("Ignoring exception in reaction_remove coroutine (see stack trace below)", include_exception=True)
 
 	async def on_member_join(self, member: discord.Member):
 		for func in self._member_join_handlers:
@@ -226,6 +250,16 @@ class FrameworkClient(discord.Client):
 			return wrapped_handler
 		return inner_decorator
 
+	def reaction_add(self, func: Callable[[], None]):
+		self._reaction_add_handlers.append(func)
+		log.debug(f"registered new new reaction handler {func.__name__}()")
+		return func
+
+	def reaction_remove(self, func: Callable[[], None]):
+		self._reaction_remove_handlers.append(func)
+		log.debug(f"registered new reaction remove handler {func.__name__}()")
+		return func
+
 	def ready(self, func: Callable[[], None]):
 		self._ready_handlers.append(func)
 		log.debug(f"registered new ready handler {func.__name__}()")
@@ -249,7 +283,7 @@ class FrameworkClient(discord.Client):
 		log.debug(f"registered new basic_help entry under the title {title}")
 
 	def long_help(self, cmd: str, mapping: Dict[str, str]):
-		if cmd.strip() == "" or "" in list(mapping.keys()) + list(mapping.values()):
+		if cmd.strip() == "" or "" in list(mapping.values()) + list(mapping.keys()):
 			# if any blank values, throw an error
 			log.critical("Blank content in help message: running the help command with this blank content *will* throw an error. Traceback logged under debug level.")
 			log.debug("".join(traceback.format_stack()))
