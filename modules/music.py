@@ -12,6 +12,7 @@ import urllib
 import json
 import time
 import log
+import key
 import os
 
 
@@ -242,6 +243,10 @@ async def command(command: str, message: discord.Message):
 
 	if not voice_enable:
 		await message.channel.send("Sorry, but the internal Opus library required for voice support was not loaded for whatever reason. Music will not work, sorry.")
+		return
+
+	if message.author.id in key.music_blacklist:
+		await message.channel.send("Command refused: You are not permitted to use this command")
 		return
 
 	parts = command.split(" ")
