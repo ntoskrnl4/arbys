@@ -22,9 +22,9 @@ def now():
 	return datetime.utcnow().__str__()
 
 
-def debug(message: str, include_exception: bool = False) -> None:
+def debug(message: str, ts: datetime = None, include_exception: bool = False) -> None:
 	try:
-		timestamp = now()
+		timestamp = now() if ts is None else ts.__str__()
 		if include_exception and (sys.exc_info()[2] is not None):
 			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 6:
@@ -47,9 +47,9 @@ def debug(message: str, include_exception: bool = False) -> None:
 		pass
 
 
-def msg(message: str, include_exception: bool = False) -> None:
+def msg(message: str, ts: datetime = None, include_exception: bool = False) -> None:
 	try:
-		timestamp = now()
+		timestamp = now() if ts is None else ts.__str__()
 		if include_exception and (sys.exc_info()[2] is not None):
 			message += "\n"+traceback.format_exc()
 		if config.file_loglevel >= 5:
@@ -66,9 +66,9 @@ def msg(message: str, include_exception: bool = False) -> None:
 		pass
 
 
-def info(message: str, include_exception: bool = False) -> None:
+def info(message: str, ts: datetime = None, include_exception: bool = False) -> None:
 	try:
-		timestamp = now()
+		timestamp = now() if ts is None else ts.__str__()
 		if include_exception and (sys.exc_info()[2] is not None):
 			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 4:
@@ -85,9 +85,9 @@ def info(message: str, include_exception: bool = False) -> None:
 		pass
 
 
-def warn(message: str, include_exception: bool = False) -> None:
+def warn(message: str, ts: datetime = None, include_exception: bool = False) -> None:
 	try:
-		timestamp = now()
+		timestamp = now() if ts is None else ts.__str__()
 		if include_exception and (sys.exc_info()[2] is not None):
 			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 3:
@@ -111,9 +111,9 @@ def warn(message: str, include_exception: bool = False) -> None:
 warning = warn
 
 
-def error(message: str, include_exception: bool = True) -> None:
+def error(message: str, ts: datetime = None, include_exception: bool = False) -> None:
 	try:
-		timestamp = now()
+		timestamp = now() if ts is None else ts.__str__()
 		if include_exception and (sys.exc_info()[2] is not None):
 			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 2:
@@ -134,9 +134,9 @@ def error(message: str, include_exception: bool = True) -> None:
 		pass
 
 
-def critical(message: str, include_exception: bool = True) -> None:
+def critical(message: str, ts: datetime = None, include_exception: bool = False) -> None:
 	try:
-		timestamp = now()
+		timestamp = now() if ts is None else ts.__str__()
 		if include_exception and (sys.exc_info()[2] is not None):
 			message += "\n" + traceback.format_exc()
 		if config.file_loglevel >= 1:
@@ -160,9 +160,9 @@ def critical(message: str, include_exception: bool = True) -> None:
 crit = critical
 
 
-def fatal(message: str, include_exception: bool = True) -> None:
+def fatal(message: str, ts: datetime = None, include_exception: bool = False) -> None:
 	try:
-		timestamp = now()
+		timestamp = now() if ts is None else ts.__str__()
 		if include_exception and (sys.exc_info()[2] is not None):
 			message += "\n"+traceback.format_exc()
 		if config.file_loglevel >= 0:

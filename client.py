@@ -18,18 +18,42 @@ def log_message(message: discord.Message):
 		return
 	if not message.attachments:  # no attachments
 		try:
-			log.msg(f"[{message.guild.name} - {message.guild.id}] [#{message.channel.name} - {message.channel.id}] [message id: {message.id}] [{message.author.name}#{message.author.discriminator} - {message.author.id}] {message.author.display_name}: {message.system_content}")
+			log.msg(
+					f"[{message.guild.name} - {message.guild.id}] "
+					f"[#{message.channel.name} - {message.channel.id}] "
+					f"[message id: {message.id}] "
+					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
+					f"{message.author.display_name}: {message.system_content}",
+					ts=message.created_at)
 		except AttributeError:
-			log.msg(f"[DM] [message id: {message.id}] [{message.author.name}#{message.author.discriminator} - {message.author.id}] {message.system_content}")
+			log.msg(
+					f"[DM] "
+					f"[message id: {message.id}] "
+					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
+					f"{message.system_content}",
+					ts=message.created_at)
 	else:
 		try:
-			log.msg(f"[{message.guild.name} - {message.guild.id}] [#{message.channel.name} - {message.channel.id}] [message id: {message.id}] [{message.author.name}#{message.author.discriminator} - {message.author.id}] {message.author.display_name}: {message.system_content} {' '.join([x.url for x in message.attachments])}")
+			log.msg(
+					f"[{message.guild.name} - {message.guild.id}] "
+					f"[#{message.channel.name} - {message.channel.id}] "
+					f"[message id: {message.id}] "
+					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
+					f"{message.author.display_name}: {message.system_content} "
+					f"{' '.join([x.url for x in message.attachments])}",
+					ts=message.created_at)
 		except AttributeError:
-			log.msg(f"[DM] [message id: {message.id}] [{message.author.name}#{message.author.discriminator} - {message.author.id}] {message.system_content} {' '.join([x.url for x in message.attachments])}")
+			log.msg(
+					f"[DM] "
+					f"[message id: {message.id}] "
+					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
+					f"{message.system_content} "
+					f"{' '.join([x.url for x in message.attachments])}",
+					ts=message.created_at)
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.4.1"
+	__version__ = "0.4.2"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
