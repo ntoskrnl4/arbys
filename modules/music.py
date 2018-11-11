@@ -1,4 +1,4 @@
-from exceptions import UnknownChannelError, NotConnectedException, MusicException
+from exceptions import BaseFrameworkError
 from typing import Union, Dict, List
 from collections import defaultdict
 from datetime import datetime
@@ -40,6 +40,14 @@ song_info_embed_colour = 0xbf35e3
 playlist_dir = "playlists/"
 
 access_lock = asyncio.Lock()
+
+
+class MusicException(BaseFrameworkError):
+	pass
+
+
+class NotConnectedException(MusicException):
+	pass
 
 
 def get_flac_data(url: str):
@@ -390,6 +398,9 @@ async def command(command: str, message: discord.Message):
 
 		# add a new song to the queue
 		if parts[1] == "add":
+			anonymous = "--unknown" in parts
+			if anonymous:
+				parts.pop(parts.index("--unknown"))
 			try:
 				parts[2]
 			except IndexError:
@@ -397,7 +408,7 @@ async def command(command: str, message: discord.Message):
 			# todo: auth check if user is in voice channel
 			url = command.replace("music add ", "", 1)
 			try:
-				song = Song(url=url, requester=message.author.mention)
+				song = Song(url=url, requester=message.author.mention if not anonymous else "<Unknown>")
 			except Exception:
 				await message.channel.send("Error getting song information: song not added to queue")
 				log.warning("Unable to add song", include_exception=True)

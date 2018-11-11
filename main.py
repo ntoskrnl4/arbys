@@ -13,6 +13,7 @@ from modules import chicken
 from modules import cond
 from modules import cqdx
 from modules import debug
+from modules import emoji_stats
 from modules import exec
 from modules import exit
 from modules import fivenine
