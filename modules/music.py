@@ -1,6 +1,7 @@
 from exceptions import BaseFrameworkError
 from typing import Union, Dict, List
 from collections import defaultdict
+from modules import __common__
 from datetime import datetime
 from client import client
 import youtube_dl
@@ -26,6 +27,10 @@ detailed_help = {
 client.long_help(cmd="music", mapping=detailed_help)
 
 voice_enable = False
+access_lock = asyncio.Lock()
+default_volume = 0.5
+song_info_embed_colour = 0xbf35e3
+playlist_dir = "playlists/"
 
 guild_channel: Dict[int, discord.TextChannel] = {}
 guild_queue: Dict[int, List["Song"]] = defaultdict(list)
@@ -33,13 +38,19 @@ guild_now_playing_song: Dict[int, "Song"] = {}
 guild_volume: Dict[int, float] = defaultdict(lambda: float(default_volume))
 active_clients: Dict[int, discord.VoiceClient] = {}
 
-default_volume = 0.5
 
-song_info_embed_colour = 0xbf35e3
+class EmptySource(discord.AudioSource):
+	used = False
 
-playlist_dir = "playlists/"
+	def is_opus(self):
+		return False
 
-access_lock = asyncio.Lock()
+	def read(self):
+		if not self.used:
+			self.used = True
+			return b"\x00"*3840
+		else:
+			return b""
 
 
 class MusicException(BaseFrameworkError):
@@ -48,45 +59,6 @@ class MusicException(BaseFrameworkError):
 
 class NotConnectedException(MusicException):
 	pass
-
-
-def get_flac_data(url: str):
-	try:
-		url = urllib.parse.urlparse(url)
-		ip = url.hostname
-		port = url.port
-		filename = url.path
-		try:
-			remote = socket.create_connection((ip, port), timeout=1.0)
-		except:
-			log.warning("Could not connect to retrieve FLAC header")
-			return
-		req = b"GET filename HTTP/1.1\r\n\r\n"
-		req = req.replace(b"filename", filename.encode())
-		remote.send(req)
-		time.sleep(0.01)
-		data_in = remote.recv(256)
-		flac_beginning = data_in[data_in.index(b"fLaC"):]
-
-		raw = bytearray(flac_beginning)
-		# now we can start bitparsing the header by hand
-
-		# header_length = int((raw[5] << 16) | (raw[6] << 8) | raw[7])
-		# min_blocksize = int((raw[8] << 8) | raw[9])
-		# max_blocksize = int((raw[10] << 8) | raw[11])
-		# min_framesize = int((raw[12] << 16) | (raw[13] << 8) | raw[14])
-		# max_framesize = int((raw[15] << 16) | (raw[16] << 8) | raw[17])
-		sample_rate = int(bin((raw[18] << 16) | (raw[19] << 8) | raw[20])[2:-4], base=2)
-		# num_channels = ((raw[20] & 0b00001110) >> 1) + 1
-		# bits_per_sample = ((raw[20]&1) << 4) | (raw[21] >> 4) + 1
-		num_samples = (((raw[21] & 0xF) << 32) | (raw[22] << 24) | (raw[23] << 16) | (raw[24] << 8) | raw[25])
-		length_sec = num_samples / sample_rate
-		return {
-			"title": filename[1:].replace(".flac", ""),
-			"duration": int(length_sec)
-		}
-	except:
-		return None
 
 
 class TrackingVolumeTransformer(discord.PCMVolumeTransformer):
@@ -170,6 +142,45 @@ async def checkmark(message) -> bool:
 		return False
 	else:
 		return True
+
+
+def get_flac_data(url: str):
+	try:
+		url = urllib.parse.urlparse(url)
+		ip = url.hostname
+		port = url.port
+		filename = url.path
+		try:
+			remote = socket.create_connection((ip, port), timeout=1.0)
+		except:
+			log.warning("Could not connect to retrieve FLAC header")
+			return
+		req = b"GET filename HTTP/1.1\r\n\r\n"
+		req = req.replace(b"filename", filename.encode())
+		remote.send(req)
+		time.sleep(0.01)
+		data_in = remote.recv(256)
+		flac_beginning = data_in[data_in.index(b"fLaC"):]
+
+		raw = bytearray(flac_beginning)
+		# now we can start bitparsing the header by hand
+
+		# header_length = int((raw[5] << 16) | (raw[6] << 8) | raw[7])
+		# min_blocksize = int((raw[8] << 8) | raw[9])
+		# max_blocksize = int((raw[10] << 8) | raw[11])
+		# min_framesize = int((raw[12] << 16) | (raw[13] << 8) | raw[14])
+		# max_framesize = int((raw[15] << 16) | (raw[16] << 8) | raw[17])
+		sample_rate = int(bin((raw[18] << 16) | (raw[19] << 8) | raw[20])[2:-4], base=2)
+		# num_channels = ((raw[20] & 0b00001110) >> 1) + 1
+		# bits_per_sample = ((raw[20]&1) << 4) | (raw[21] >> 4) + 1
+		num_samples = (((raw[21] & 0xF) << 32) | (raw[22] << 24) | (raw[23] << 16) | (raw[24] << 8) | raw[25])
+		length_sec = num_samples / sample_rate
+		return {
+			"title": filename[1:].replace(".flac", ""),
+			"duration": int(length_sec)
+		}
+	except:
+		return None
 
 
 def check_if_user_in_channel(channel: discord.VoiceChannel, user: Union[discord.User, int]) -> bool:
@@ -384,6 +395,7 @@ async def command(command: str, message: discord.Message):
 						return
 
 				active_clients[message.guild.id] = new_connection
+				new_connection.play(EmptySource())  # Attempt to clear transmitting on join bug
 				new_connection.stop()
 				if not await checkmark(message):
 					try:
@@ -398,14 +410,13 @@ async def command(command: str, message: discord.Message):
 
 		# add a new song to the queue
 		if parts[1] == "add":
-			anonymous = "--unknown" in parts
+			anonymous = "--unknown" in parts and __common__.check_permission(message.author)
 			if anonymous:
 				parts.pop(parts.index("--unknown"))
 			try:
 				parts[2]
 			except IndexError:
 				await message.channel.send("Cannot add song to queue: no song given to add")
-			# todo: auth check if user is in voice channel
 			url = command.replace("music add ", "", 1)
 			try:
 				song = Song(url=url, requester=message.author.mention if not anonymous else "<Unknown>")
@@ -551,7 +562,11 @@ async def command(command: str, message: discord.Message):
 					return
 			if not all:
 				await vc.disconnect(force=True)
-				del guild_now_playing_song[message.guild.id]
+				try:
+					del guild_now_playing_song[message.guild.id]
+				except KeyError:
+					# no song was ever actually played while in VC. lmao ok
+					pass
 			if all:
 				for vc in client.voice_clients:
 					if vc.guild.id == message.guild.id:
@@ -597,8 +612,8 @@ async def command(command: str, message: discord.Message):
 				return
 
 			loaded_playlist = data['playlist']
-			for i in range(data['exponential_extend_iter']):
-				loaded_playlist.extend(loaded_playlist)
+			# for i in range(data['exponential_extend_iter']):
+			# 	loaded_playlist.extend(loaded_playlist)
 			if (data['randomize'] or force_randomize) and not no_force_randomize:
 				random.shuffle(loaded_playlist)
 
