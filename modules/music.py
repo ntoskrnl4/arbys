@@ -2,7 +2,7 @@ from exceptions import BaseFrameworkError
 from typing import Union, Dict, List
 from collections import defaultdict
 from modules import __common__
-from datetime import datetime
+from datetime import datetime, timedelta
 from client import client
 import youtube_dl
 import asyncio
@@ -32,6 +32,7 @@ default_volume = 0.5
 song_info_embed_colour = 0xbf35e3
 playlist_dir = "playlists/"
 
+cooldown: Dict[int, datetime] = defaultdict(lambda: datetime(1970, 1, 1, 0, 0, 0, 0))
 guild_channel: Dict[int, discord.TextChannel] = {}
 guild_queue: Dict[int, List["Song"]] = defaultdict(list)
 guild_now_playing_song: Dict[int, "Song"] = {}
@@ -132,6 +133,28 @@ class Song:
 	@property
 	def depth(self):
 		return getattr(self.source, "timer", 0)
+
+
+async def check_cooldown(message: discord.Message) -> bool:  # return True if in violation, False to continue (no violation)
+	global cooldown
+	if (message.created_at-cooldown[message.author.id]) < timedelta(seconds=90):
+		await message.add_reaction("❌")
+		await message.channel.send("Command refused: You are on cooldown for this operation.")
+		return True
+	else:
+		cooldown[message.author.id] = message.created_at
+		return False
+
+
+async def check_queue(message: discord.Message, url: str) -> bool:
+	if url in [x.submitted_url for x in guild_queue[message.guild.id]]:
+		await message.add_reaction("❌")
+		await message.channel.send("Command refused: This song is already in the queue.")
+		return True
+	if len([x for x in guild_queue[message.guild.id] if x.requester == message.author.mention]) >= 3:
+		await message.add_reaction("❌")
+		await message.channel.send("Command refused: You already have 3+ songs in the queue.")
+		return True
 
 
 async def checkmark(message) -> bool:
@@ -410,19 +433,29 @@ async def command(command: str, message: discord.Message):
 
 		# add a new song to the queue
 		if parts[1] == "add":
+
+			if await check_cooldown(message):
+				return
+
 			anonymous = "--unknown" in parts and __common__.check_permission(message.author)
 			if anonymous:
 				parts.pop(parts.index("--unknown"))
+
 			try:
 				parts[2]
 			except IndexError:
 				await message.channel.send("Cannot add song to queue: no song given to add")
+
 			url = command.replace("music add ", "", 1)
+
+			if await check_queue(message, url):
+				return
+
 			try:
 				song = Song(url=url, requester=message.author.mention if not anonymous else "<Unknown>")
 			except Exception:
 				await message.channel.send("Error getting song information: song not added to queue")
-				log.warning("Unable to add song", include_exception=True)
+				# log.warning("Unable to add song", include_exception=True)  disabled because it kinda spams the log a bit
 				return
 
 			# todo: add warning for sending links with playlists, that they will not get added
@@ -632,6 +665,7 @@ async def command(command: str, message: discord.Message):
 		if parts[1] == "clear":
 			guild_queue[message.guild.id] = []
 			return
+
 		# remove (element) from queue or clear queue
 		if parts[1] == "remove":
 			vc = get_target_voice_connection(message.guild)
