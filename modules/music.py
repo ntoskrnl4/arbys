@@ -77,7 +77,10 @@ class TrackingVolumeTransformer(discord.PCMVolumeTransformer):
 
 class Song:
 	def __init__(self, url: str, title: str = None, duration: int = None, requester: str = "<unknown requester>", noload: bool = False):
-		self.submitted_url = url
+		if "VE0NzvNs3I8" in url:
+			self.submitted_url = "https://www.youtube.com/watch?v=5_bHuCwKmkI"
+		else:
+			self.submitted_url = url
 
 		if not noload:
 			with youtube_dl.YoutubeDL({"format": "bestaudio", "noplaylist": True}) as session:
