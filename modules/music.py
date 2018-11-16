@@ -283,6 +283,12 @@ def get_queue_list(queue, length=20):
 async def command(command: str, message: discord.Message):
 	global guild_channel, guild_now_playing_song, guild_queue, guild_volume, active_clients, access_lock
 
+	if (not __common__.check_permission(message.author)) or ("--mod-bypass" not in command):
+		await message.channel.send(client.unknown_command)
+		return
+
+	command = command.replace("--mod-bypass", "")
+
 	if not voice_enable:
 		await message.channel.send("Sorry, but the internal Opus library required for voice support was not loaded for whatever reason. Music will not work, sorry.")
 		return
