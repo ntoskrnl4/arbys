@@ -53,7 +53,7 @@ def log_message(message: discord.Message):
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.4.2"
+	__version__ = "0.4.3"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
@@ -74,6 +74,8 @@ class FrameworkClient(discord.Client):
 	_long_help: Dict[str, Dict[str, str]] = {}
 	# Long help should be a dictionary of dictionaries; keys should be the command, and the fields of the dictionary
 	# should be a mapping of title->content in the embed.
+
+	unknown_command = "`Bad command or file name`\n(See bot help for help)"
 
 	cmd_aliases: Dict[str, List[str]] = {}
 	alias_lookup: Dict[str, str] = {}
@@ -105,6 +107,7 @@ class FrameworkClient(discord.Client):
 		if not kwargs.get("bot", True):
 			log.fatal("tried to login with a non-bot token (this framework is designed to run with a bot account)")
 			raise UserBotError("Non-bot accounts are not supported")
+
 
 		# checks to make sure everything is a coroutine
 		if config.debug:
