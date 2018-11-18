@@ -22,6 +22,10 @@ last_file = None
 
 @client.command(trigger=cmd_name)
 async def command(command: str, message: discord.Message):
+	await message.channel.send("just turn on your radio and try for yourself because the image was never accurate and shouldn't've even been relied on a single bit <:galen_irl:466725951133450242>")
+	return
+
+
 	global cond_cache_time, last_cond_update, last_file
 	if command == "update":
 		last_cond_update = 1
