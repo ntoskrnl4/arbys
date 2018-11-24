@@ -37,6 +37,7 @@ async def leave_notification(member: discord.Member):
 		embed = embed.set_thumbnail(url=member.avatar_url_as(static_format="png", size=1024))
 		embed = embed.add_field(name="Tag", value=f"{member.name}#{member.discriminator}")
 		embed = embed.add_field(name="ID", value=member.id)
+		embed = embed.add_field(name="Nickname", value=member.display_name)
 		embed = embed.add_field(name="Mention", value=member.mention)
 		embed = embed.add_field(name="New Member Count", value=member.guild.member_count)
 		embed = embed.set_footer(text=str(now))
