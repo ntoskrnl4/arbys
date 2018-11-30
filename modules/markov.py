@@ -28,7 +28,9 @@ async def command(command: str, message: discord.Message):
 			c = client.get_channel(__common__.stripMentionsToID(command[1]))
 		except:
 			c = message.channel
-			pass
+		else:
+			if c.id == 473570993072504832:
+				c = message.channel
 
 	try:
 		a = client.get_user(__common__.stripMentionsToID(command[1]))
@@ -46,6 +48,8 @@ async def command(command: str, message: discord.Message):
 		elif target_user_id is not None:
 			msg_hist = []
 			for ch in message.guild.text_channels:
+				if ch.id == 473570993072504832:
+					continue
 				try:
 					msg_hist.extend(await ch.history(limit=300).flatten())
 				except:
@@ -53,7 +57,7 @@ async def command(command: str, message: discord.Message):
 			msg_hist = [x for x in msg_hist if x.author.id == target_user_id]
 		else:
 			msg_hist = await c.history(limit=3000).flatten()
-		msg_hist_content = [x.clean_content for x in msg_hist if not x.author.bot]
+		msg_hist_content = [x.clean_content for x in msg_hist]
 		src_str = "\n".join(msg_hist_content)
 		model = markovify.NewlineText(src_str)
 		for _ in range(10):
