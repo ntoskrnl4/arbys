@@ -28,9 +28,6 @@ async def command(command: str, message: discord.Message):
 			c = client.get_channel(__common__.stripMentionsToID(command[1]))
 		except:
 			c = message.channel
-		else:
-			if c.id == 473570993072504832:
-				c = message.channel
 
 	try:
 		a = client.get_user(__common__.stripMentionsToID(command[1]))
