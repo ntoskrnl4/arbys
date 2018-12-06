@@ -53,6 +53,11 @@ async def command(command: str, message: discord.Message):
 					continue
 			msg_hist = [x for x in msg_hist if x.author.id == target_user_id]
 		else:
+			if c is None:
+				await message.channel.send("Unable to run markov chain: No such object (unknown/invalid channel ID?)")
+			if not c.permissions_for(c.guild.me).read_message_history:
+				await message.channel.send("Unable to run markov chain: History not available for specified object (invalid permissions?)")
+				return
 			msg_hist = await c.history(limit=3000).flatten()
 		msg_hist_content = [x.clean_content for x in msg_hist]
 		src_str = "\n".join(msg_hist_content)
@@ -62,7 +67,7 @@ async def command(command: str, message: discord.Message):
 			if ret is not None:
 				break
 		else:
-			ret = "<Error: For some reason the chain did not generate an acceptable sentence. Please rerun the command.>"
+			ret = "Unable to run markov chain: Invalid output (try rerunning the command)"
 	await message.channel.send(ret)
 	return
 
