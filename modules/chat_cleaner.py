@@ -29,7 +29,7 @@ async def message_checker(message: discord.Message):
 				await message.delete()
 			except discord.Forbidden:
 				log.warning("could not delete message with executable attachments (invalid permissions?)")
-				await client.get_channel().send("Failed to delete message with executable attachment!\n"
+				await client.get_channel(473570993072504832).send("Failed to delete message with executable attachment!\n"
 												f"Message link: {message.jump_to_url}\n"
 												f"Sender: {message.author.name}#{message.author.discriminator}\n"
 												f"Channel: {message.channel.mention}\n"
@@ -42,7 +42,7 @@ async def message_checker(message: discord.Message):
 					log.warning("could not warn user for posting executable attachments (RO channel?)")
 			else:
 				log.debug("successfully deleted message with executable attachments")
-				await client.get_channel().send("Successfully deleted message with executable attachment:\n"
+				await client.get_channel(473570993072504832).send("Successfully deleted message with executable attachment:\n"
 												f"Sender: {message.author.name}#{message.author.discriminator}\n"
 												f"Channel: {message.channel.mention}\n"
 												f"Disallowed attachment filename: {' '.join([x.name for x in faulty_attachments])}\n"
