@@ -73,6 +73,7 @@ async def command(command: str, message: discord.Message):
 			user_embed = user_embed.add_field(name="Roles in this server", value=roles, inline=False)
 			user_embed = user_embed.add_field(name="User Nickname", value=m.display_name)
 			user_embed = user_embed.add_field(name="Joined this server on", value=m.joined_at.__str__())
+			user_embed = user_embed.add_field(name="Current State", value=f"`Apparent Status: {m.status}`\n`Desktop: {m.desktop_status}`\n`Web: {m.web_status}`\n`Mobile: {m.mobile_status}`\n`Is on mobile? {m.is_on_mobile()}`")
 
 	if isServer:
 		server_embed = discord.Embed(title="Server Information", description=f"Information about the server {s.name}", color=0xb368a2)
