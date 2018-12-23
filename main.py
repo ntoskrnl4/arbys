@@ -23,11 +23,11 @@ from modules import help
 from modules import htm
 from modules import info
 from modules import join_leave_msgs
-from modules import kzop
 from modules import logstat
 from modules import markov
 from modules import morse
 from modules import music
+from modules import n2yo
 from modules import nou
 from modules import phonehand
 from modules import ping
