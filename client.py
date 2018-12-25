@@ -53,7 +53,7 @@ def log_message(message: discord.Message):
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.4.3"
+	__version__ = "0.4.4"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
@@ -251,6 +251,8 @@ class FrameworkClient(discord.Client):
 			self._command_lookup[trigger] = new_cmd
 			for alias in aliases:  # name shadows but we don't care tbh it's only a tempvar
 				self._command_lookup[alias] = new_cmd
+			new_cmd.__name__ = func.__name__
+			new_cmd.__module__ = func.__module__
 
 			log.debug(f"registered new command handler {func.__name__}() with trigger '{trigger}' and aliases: {aliases}")
 			return new_cmd
