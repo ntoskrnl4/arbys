@@ -70,6 +70,15 @@ def check_cooldowns():
 	return True
 
 
+def deg2hms(degrees):
+	hours = int((degrees/360)*24)
+	hours_part = ((degrees/360)*24) - hours
+	minutes = int(hours_part*60)
+	minutes_part = (hours_part*60) - minutes
+	seconds = minutes_part*60
+	return hours, minutes, seconds
+
+
 def get_lat_long(square: str):
 	lon = ((ord(square[0].upper()) - ord('A')) * 20) - 180
 	lat = ((ord(square[1].upper()) - ord('A')) * 10) - 90
@@ -192,6 +201,31 @@ async def process_command(command: str, message: discord.Message):
 	if debug: await message.channel.send("debug: cooldowns passed, continuing")
 
 	if parts[1] in ["get_pos", "pos", "position"]:
+		try:
+			target_alt = parts.pop(parts.index("--alt")+1)
+			parts.pop(parts.index("--alt"))
+		except IndexError:
+			# no following number
+			await message.channel.send("Argument error: Altitude argument provided but no altitude followed. Run `n2yo` without arguments for command help.")
+			return
+		except ValueError:
+			# --alt not provided at all. just use 100m as default?
+			if debug: await message.channel.send("debug: no --alt provided, defaulting to 100m")
+			target_alt = 100
+		else:
+			try:
+				target_alt = int(target_alt)
+				if debug: await message.channel.send(f"debug: successfully obtained altitude argument, value {target_alt}")
+			except ValueError:
+				# invalid altitude
+				await message.channel.send(f"Argument error: Provided altitude could not be converted to integer. (got: {target_alt})")
+				return
+
+		show_dx = "--dx" in parts
+		if show_dx:
+			parts.pop(parts.index("--dx"))
+			if debug: await message.channel.send("debug: using --dx argument, getting 2 positions instead and showing movement (dt=1)")
+
 		if len(parts) < 4:
 			await message.channel.send("Argument error: Not enough arguments provided for specified operation. Run `n2yo` without arguments for command help.")
 			return
@@ -214,34 +248,13 @@ async def process_command(command: str, message: discord.Message):
 		target_lat, target_long = get_lat_long(target_grid)
 		if debug: await message.channel.send(f"debug: successfully got target coordinates {target_lat} {target_long}")
 
-		try:
-			target_alt = parts[parts.index("--alt")+1]
-		except IndexError:
-			# no following number
-			await message.channel.send("Argument error: Altitude argument provided but no altitude followed. Run `n2yo` without arguments for command help.")
-			return
-		except ValueError:
-			# --alt not provided at all. just use 100m as default?
-			if debug: await message.channel.send("debug: no --alt provided, defaulting to 100m")
-			target_alt = 100
-		else:
-			try:
-				target_alt = int(target_alt)
-				if debug: await message.channel.send(f"debug: successfully obtained altitude argument, value {target_alt}")
-			except ValueError:
-				# invalid altitude
-				await message.channel.send(f"Argument error: Provided altitude could not be converted to integer. (got: {target_alt})")
-				return
-
 		async with message.channel.typing():
 			async with aiohttp.ClientSession() as connection:
 
-				target_url = f"{base}/positions/{target_sat}/{target_lat}/{target_long}/{target_alt}/2/"
+				target_url = f"{base}/positions/{target_sat}/{target_lat}/{target_long}/{target_alt}/{2 if show_dx else 1}/"
 				if debug: await message.channel.send(f"debug: calling api url `{target_url}`")
 				async with connection.get(target_url+api_key) as response:
 					info = await response.json()
-
-			# todo: --dx shows movement of satellite
 
 			satname = info['info']['satname']
 			satid = info['info']['satid']
@@ -253,23 +266,38 @@ async def process_command(command: str, message: discord.Message):
 			elevation = info['positions'][0]['elevation']
 			ra = info['positions'][0]['ra']
 			dec = info['positions'][0]['dec']
-
-			ra_h = int((ra/360)*24)
-			ra_h_part = ((ra/360)*24) - ra_h
-			ra_m = int(ra_h_part*24)
-			ra_m_part = (ra_h_part*24) - ra_m
-			ra_s = ra_m_part*24
+			ra_h, ra_m, ra_s = deg2hms(ra)
 
 			gr_loc = f"`Latitude: {str(gr_lat)[:8]}°`\n`Longitude: {str(gr_lon)[:7]}°`\n`Altitude: {sat_alt:.2f} km`"
 			sky_loc = f"`Azimuth: {azimuth}°`\n`Elevation: {elevation}°`"
 			cel_loc = f"`RA: {ra_h}h {ra_m}m {ra_s:.3f}s`\n`Dec: {dec:.2f} degrees`"
+
+			if show_dx:
+				d_gr_lat = info['positions'][1]['satlatitude'] - gr_lat
+				d_gr_lon = info['positions'][1]['satlongitude'] - gr_lon
+				d_sat_alt = info['positions'][1]['sataltitude'] - sat_alt
+				d_azimuth = info['positions'][1]['azimuth'] - azimuth
+				d_elevation = info['positions'][1]['elevation'] - elevation
+				d_ra = info['positions'][1]['ra'] - ra
+				d_dec = info['positions'][1]['dec'] - dec
+				d_ra_h, d_ra_m, d_ra_s = deg2hms(d_ra)
+
+				d_gr_loc = f"`Latitude: {d_gr_lat:.2f}°/sec`\n`Longitude: {d_gr_lon:.2f}°/sec`\n`Altitude: {d_sat_alt:.2f} km/s`"
+				d_sky_loc = f"`Azimuth: {d_azimuth:.2f}°/sec`\n`Elevation: {d_elevation:.2f}°/sec`"
+				d_cel_loc = f"`RA: {d_ra_s+(d_ra_m*60)+(d_ra_h*3600):.2f}s /second`\n`Dec: {d_dec:.4f} degrees/sec`"
 
 			embed = discord.Embed(title=f"Current satellite position for \"{satname}\" (ID {satid})",
 									description=f"This information calculated for {ts.__str__()} UTC")
 			embed = embed.add_field(name="Ground Location", value=gr_loc)
 			embed = embed.add_field(name="Sky Location", value=sky_loc)
 			embed = embed.add_field(name="Celestial Sphere Location", value=cel_loc)
-			if '--apicount' in command:
+
+			if show_dx:
+				embed = embed.add_field(name="Ground Movement", value=d_gr_loc)
+				embed = embed.add_field(name="Sky Movement", value=d_sky_loc)
+				embed = embed.add_field(name="Celestial Sphere Movement", value=d_cel_loc)
+
+			if '--apicount' in parts:
 				embed = embed.set_footer(text=f"Information provided thanks to the N2YO.com API - API Usage for past hour: {info['info']['transactionscount']}")
 			else:
 				embed = embed.set_footer(text=f"Information provided thanks to the N2YO.com API")
