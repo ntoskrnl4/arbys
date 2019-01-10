@@ -1,34 +1,42 @@
+from client import client
+from collections import defaultdict
+from datetime import datetime
 from exceptions import BaseFrameworkError
 from typing import Union, Dict, List
-from collections import defaultdict
-from modules import __common__
-from datetime import datetime, timedelta
-from client import client
-import youtube_dl
+
 import asyncio
 import discord
+import json
+import key
+import log
+import os
 import random
 import socket
-import urllib
-import json
 import time
-import log
-import key
-import os
+import urllib
+import youtube_dl
 
 
-client.basic_help(title="music", desc="Handles music functionality within the bot. (Currently disabled)")
+client.basic_help(title="music", desc="Handles music functionality within the bot.")
 detailed_help = {
 	"Usage": f"{client.default_prefix}music <subcommand> [args]",
 	"Arguments": "`subcommand` - subcommand to run\n`args` - (optional) arguments specific to the subcommand being run",
 	"Description": "This command manages music related functionality within the bot. Music is available to several servers at once.",
-	"Subcommands": "<change me>",  # todo: add subcommands
+	"Subcommands": f"`{client.default_prefix}music join` - Joins a voice channel\n"
+					f"`{client.default_prefix}music add <url>` - Adds the specified song to the queue\n"
+					f"`{client.default_prefix}music play` - Plays music in the queue\n"
+					f"`{client.default_prefix}music pause` - Toggles pause\n"
+					f"`{client.default_prefix}music playing` - Shows what is currently playing\n"
+					f"`{client.default_prefix}music skip` - Skips the currently playing song\n"
+					f"`{client.default_prefix}music queue` - Shows the current music queue\n"
+					f"`{client.default_prefix}music info [index]` - Shows song information for the specified song in the queue\n"
+					f"`{client.default_prefix}music volume <volume>` - Sets the music volume, on a scale of 0.0-2.0\n"
+					f"`{client.default_prefix}music exit` - Exits the channel (also aliased to `stop` and `quit`)\n",
 }
 client.long_help(cmd="music", mapping=detailed_help)
 
 voice_enable = False
 access_lock = asyncio.Lock()
-default_volume = 0.5
 song_info_embed_colour = 0xbf35e3
 playlist_dir = "playlists/"
 
@@ -36,7 +44,7 @@ cooldown: Dict[int, datetime] = defaultdict(lambda: datetime(1970, 1, 1, 0, 0, 0
 guild_channel: Dict[int, discord.TextChannel] = {}
 guild_queue: Dict[int, List["Song"]] = defaultdict(list)
 guild_now_playing_song: Dict[int, "Song"] = {}
-guild_volume: Dict[int, float] = defaultdict(lambda: float(default_volume))
+guild_volume: Dict[int, float] = defaultdict(lambda: float(1.0))
 active_clients: Dict[int, discord.VoiceClient] = {}
 
 
@@ -135,34 +143,21 @@ class Song:
 		return getattr(self.source, "timer", 0)
 
 
-async def check_cooldown(message: discord.Message) -> bool:  # return True if in violation, False to continue (no violation)
-	global cooldown
-	if (message.created_at-cooldown[message.author.id]) < timedelta(seconds=90):
-		await message.add_reaction("❌")
-		await message.channel.send("Command refused: You are on cooldown for this operation.")
-		return True
-	else:
-		cooldown[message.author.id] = message.created_at
-		return False
-
-
-async def check_queue(message: discord.Message, url: str) -> bool:
-	if url in [x.submitted_url for x in guild_queue[message.guild.id]]:
-		await message.add_reaction("❌")
-		await message.channel.send("Command refused: This song is already in the queue.")
-		return True
-	if len([x for x in guild_queue[message.guild.id] if x.requester == message.author.mention]) >= 3:
-		await message.add_reaction("❌")
-		await message.channel.send("Command refused: You already have 3+ songs in the queue.")
-		return True
-
-
-async def checkmark(message) -> bool:
+async def confirm(message, fallback: str = None) -> bool:
 	try:
-		await message.add_reaction("☑")
-	except:  # broad except but that's fine
-		log.debug("{__name__}: couldn't add reaction (insufficient permissions?)")
+		await message.add_reaction("")
+	except discord.errors.Forbidden:
+		pass
+	else:
+		return True
+
+	if fallback is None:
 		return False
+	# now still executing only if the above failed
+	try:
+		await message.channel.send(fallback)
+	except discord.errors.Forbidden:
+		return False  # we weren't able to send any feedback to the user at all
 	else:
 		return True
 
@@ -283,14 +278,12 @@ def get_queue_list(queue, length=20):
 async def command(command: str, message: discord.Message):
 	global guild_channel, guild_now_playing_song, guild_queue, guild_volume, active_clients, access_lock
 
-	if (not __common__.check_permission(message.author)) or ("--mod-bypass" not in command):
+	if message.guild.id == 364480908528451584:
 		await message.channel.send(client.unknown_command)
 		return
 
-	command = command.replace("--mod-bypass", "")
-
 	if not voice_enable:
-		await message.channel.send("Sorry, but the internal Opus library required for voice support was not loaded for whatever reason. Music will not work, sorry.")
+		await message.channel.send("Sorry, but the internal Opus library required for voice support was not loaded for whatever reason, and music functionality will not work.")
 		return
 
 	if message.author.id in key.music_blacklist:
@@ -387,11 +380,11 @@ async def command(command: str, message: discord.Message):
 				if connection is None:
 					# we're not in a channel either
 					# cool, we have no idea what channel they want us to join to
-					await message.channel.send("Ambiguous/unknown target channel: please join the target voice channel")
+					await message.channel.send("Cannot join channel: Ambiguous/unknown target channel - please join the target voice channel")
 					return
 				else:
 					# user's not in a channel but we are already in a channel
-					await message.channel.send("Already in a channel (also, next time please join the channel you are referring to first)")
+					await message.channel.send("Cannot join channel: Already in a channel (also, next time please join the channel you are referring to first)")
 					return
 			if isinstance(connection, MusicException):
 				# user is in there but we're not
@@ -406,7 +399,7 @@ async def command(command: str, message: discord.Message):
 
 				channel_perms = user_state.channel.permissions_for(message.guild.me)
 				if not channel_perms.connect:
-					await message.channel.send("Cannot join channel: insufficient permissions to even connect to the channel")
+					await message.channel.send("Cannot join channel: insufficient permissions to connect to the channel")
 					return
 				if channel_perms.connect and not channel_perms.speak:
 					await message.channel.send("Refusing to join channel: insufficient permissions to send voice data in target channel")
@@ -420,17 +413,14 @@ async def command(command: str, message: discord.Message):
 					try:
 						new_connection = await message.author.voice.channel.connect(timeout=5.0)
 					except discord.errors.ClientException:
-						await message.channel.send("Sorry, but for an unknown reason Discord.py will not permit us to connect because it thinks we are already connected.\nTry running `music exit --force-all` while still in the channel to attempt to disconnect from all channels.")
+						# ahhh, just give up
+						await message.channel.send("Cannot join channel: Unknown internal error (sorry...)")
 						return
 
 				active_clients[message.guild.id] = new_connection
 				new_connection.play(EmptySource())  # Attempt to clear transmitting on join bug
 				new_connection.stop()
-				if not await checkmark(message):
-					try:
-						await message.channel.send("Joined the channel")
-					except:
-						pass
+				await confirm(message, "Joined the channel")
 				return
 			if isinstance(connection, discord.VoiceClient):
 				# we're in the channel with them
@@ -439,14 +429,6 @@ async def command(command: str, message: discord.Message):
 
 		# add a new song to the queue
 		if parts[1] == "add":
-
-			if await check_cooldown(message):
-				return
-
-			anonymous = "--unknown" in parts and __common__.check_permission(message.author)
-			if anonymous:
-				parts.pop(parts.index("--unknown"))
-
 			try:
 				parts[2]
 			except IndexError:
@@ -454,11 +436,8 @@ async def command(command: str, message: discord.Message):
 
 			url = command.replace("music add ", "", 1)
 
-			if await check_queue(message, url):
-				return
-
 			try:
-				song = Song(url=url, requester=message.author.mention if not anonymous else "<Unknown>")
+				song = Song(url=url, requester=message.author.mention)
 			except Exception:
 				await message.channel.send("Error getting song information: song not added to queue")
 				# log.warning("Unable to add song", include_exception=True)  disabled because it kinda spams the log a bit
@@ -480,7 +459,7 @@ async def command(command: str, message: discord.Message):
 				await message.channel.send("Command refused: you are not in the target channel")
 				return
 			vc.stop()
-			await checkmark(message)
+			await confirm(message)
 
 		# pause the current song (toggle)
 		if parts[1] == "pause":
@@ -493,15 +472,15 @@ async def command(command: str, message: discord.Message):
 				return
 			if vc.is_paused():
 				vc.resume()
-				await message.add_reaction("▶")
+				await message.channel.send("Paused music playback", delete_after=15)
 			else:
 				vc.pause()
-				await message.add_reaction("⏸")
+				await message.channel.send("Resumed music playback", delete_after=15)
 
 		# change the volume
 		if parts[1] == "volume":
 			try:
-				new_vol = float(parts[2])*default_volume
+				new_vol = float(parts[2])
 				if message.author.id == 389415987402899459 and new_vol > 0.4:
 					await message.channel.send("not happening")
 					return
@@ -524,7 +503,7 @@ async def command(command: str, message: discord.Message):
 				pass
 			finally:
 				guild_volume[message.guild.id] = new_vol
-				await checkmark(message)
+				await confirm(message, f"Successfully changed the volume to {new_vol}")
 
 		# see the queue
 		if parts[1] == "queue":
@@ -593,7 +572,7 @@ async def command(command: str, message: discord.Message):
 				all = False
 			vc = get_target_voice_connection(message.guild)
 			if not isinstance(vc, discord.VoiceClient):
-				await message.channel.send("Cannot disconnect from voice channel: not connected to any voice channel to disconnect from")
+				await message.channel.send("Cannot disconnect from voice channel: not connected to any voice channel in this server")
 				return
 			if vc.channel.members != [vc.guild.me]:
 				if not check_if_user_in_channel(vc.channel, message.author.id):
@@ -624,7 +603,7 @@ async def command(command: str, message: discord.Message):
 			force_randomize = "--force-randomize" in command
 			no_force_randomize = "--no-force-randomize" in command
 			if force_randomize and no_force_randomize:
-				await message.channel.send("Exception: both --force-randomize and --no-force-randomize passed as arguments")
+				await message.channel.send("Argument error: both --force-randomize and --no-force-randomize passed as arguments")
 				return
 
 			command = command.replace(" --force-randomize", "")
@@ -651,15 +630,20 @@ async def command(command: str, message: discord.Message):
 				return
 
 			loaded_playlist = data['playlist']
-			# for i in range(data['exponential_extend_iter']):
-			# 	loaded_playlist.extend(loaded_playlist)
+			if "--no-extend" not in command:
+				for i in range(data['exponential_extend_iter']):
+					loaded_playlist.extend(loaded_playlist)
 			if (data['randomize'] or force_randomize) and not no_force_randomize:
 				random.shuffle(loaded_playlist)
 
 			playlist_objects = []
 			errored = False
+			i = 0
 			for song in loaded_playlist:
-				playlist_objects.append(Song(url=song, requester=f"{message.author.mention} from playlist \"{parts[2]}.json\"", noload=True))
+				playlist_objects.append(Song(url=song,
+											requester=f"{message.author.mention} from playlist \"{parts[2]}.json\"",
+											noload=False if i < 3 else True))
+				i += 1
 
 			current_queue = guild_queue[message.guild.id]
 			if current_queue is None:
