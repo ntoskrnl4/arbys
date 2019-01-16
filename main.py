@@ -17,7 +17,6 @@ from modules import emoji_stats
 from modules import exec
 from modules import exit
 from modules import fivenine
-from modules import ft8
 from modules import ham
 from modules import help
 from modules import htm

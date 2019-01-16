@@ -1,7 +1,9 @@
 from client import client
 from modules import __common__
-import discord
+
 import asyncio
+import datetime
+import discord
 
 
 cmd_name = "debug"
@@ -14,6 +16,20 @@ detailed_help = {
 	"Description": "This command shows various debugging information about the user, the server used in, and the channel. The ID of a user, server, or channel can be passed in as well.",
 }
 client.long_help(cmd=cmd_name, mapping=detailed_help)
+
+
+def status_emoji(state: discord.Status) -> str:
+	if state is discord.Status.online: return "<:status_online:534918510950744064>"
+	if state is discord.Status.idle: return "<:status_idle:534918510548090882>"
+	if state is discord.Status.dnd: return "<:status_dnd:534918509701103622>"
+	if state is discord.Status.offline: return "<:status_offline:534918510652948501>"
+
+
+def get_any_member(target: int):
+	for guild in client.guilds:
+		if guild.get_member(target) is not None:
+			return guild.get_member(target)
+	return None
 
 
 @client.command(trigger=cmd_name, aliases=["objinfo", "userinfo"])
@@ -73,7 +89,16 @@ async def command(command: str, message: discord.Message):
 			user_embed = user_embed.add_field(name="Roles in this server", value=roles, inline=False)
 			user_embed = user_embed.add_field(name="User Nickname", value=m.display_name)
 			user_embed = user_embed.add_field(name="Joined this server on", value=m.joined_at.__str__())
-			user_embed = user_embed.add_field(name="Current State", value=f"`Apparent Status: {m.status}`\n`Desktop: {m.desktop_status}`\n`Web: {m.web_status}`\n`Mobile: {m.mobile_status}`\n`Is on mobile? {m.is_on_mobile()}`")
+		if get_any_member(u.id) is not None:
+			m = get_any_member(u.id)
+			user_embed = user_embed.add_field(name="Current State",
+												value=f"Apparent Status: {status_emoji(m.status)}\n"
+														f"Desktop: {status_emoji(m.desktop_status)}\n"
+														f"Web: {status_emoji(m.web_status)}\n"
+														f"Mobile: {status_emoji(m.mobile_status)}\n"
+														f"Is on mobile? {m.is_on_mobile()}",
+												inline=False)
+		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
 	if isServer:
 		server_embed = discord.Embed(title="Server Information", description=f"Information about the server {s.name}", color=0xb368a2)
@@ -93,6 +118,7 @@ async def command(command: str, message: discord.Message):
 		server_embed = server_embed.add_field(name="Is offline?", value=s.unavailable)
 		server_embed = server_embed.add_field(name="Admin 2FA required?", value=s.mfa_level)
 		server_embed = server_embed.add_field(name="Verification Level", value=s.verification_level)
+		server_embed = server_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
 	if isTextChannel:
 		channel_embed = discord.Embed(title="Channel Information", description=f"Information about the text channel {c.mention}", color=0x8f44a2)
@@ -127,6 +153,7 @@ async def command(command: str, message: discord.Message):
 		await asyncio.sleep(0.05)
 
 	if isTextChannel or isVoiceChannel:
+		channel_embed = channel_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 		await message.channel.send(embed=channel_embed)
 		await asyncio.sleep(0.05)
 
