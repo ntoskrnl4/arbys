@@ -96,18 +96,6 @@ class FrameworkClient(discord.Client):
 		self.message_count: int = 0
 		self.active: bool = False
 		self.prefixes = [x.lower() for x in config.prefixes]
-		try:
-			self.default_prefix = self.prefixes[0]
-			self._boot_playing_msg = f"{self.default_prefix}help"
-			self.prefixes.append(f"<@{self.user.id}> ")
-			self.prefixes.append(f"<@!{self.user.id}> ")
-		except IndexError:
-			log.warning("No prefixes configured in bot - only valid prefix will be a self mention")
-			self._boot_playing_msg = f"@{self.user.name} help"
-			self.default_prefix = f"<@{self.user.id}> "
-			self.default_prefix = f"<@!{self.user.id}> "
-			self.prefixes.append(f"<@{self.user.id}> ")
-			self.prefixes.append(f"<@!{self.user.id}> ")
 
 
 	def run(self, *args, **kwargs) -> None:
@@ -116,7 +104,6 @@ class FrameworkClient(discord.Client):
 		if not kwargs.get("bot", True):
 			log.fatal("tried to login with a non-bot token (this framework is designed to run with a bot account)")
 			raise UserBotError("Non-bot accounts are not supported")
-
 
 		# checks to make sure everything is a coroutine
 		if config.debug:
@@ -164,6 +151,18 @@ class FrameworkClient(discord.Client):
 				await func()
 			except Exception as e:
 				log.warning("Ignoring exception in ready coroutine (see stack trace below)", include_exception=True)
+		try:
+			self.default_prefix = self.prefixes[0]
+			self._boot_playing_msg = f"{self.default_prefix}help"
+			self.prefixes.append(f"<@{self.user.id}> ")
+			self.prefixes.append(f"<@!{self.user.id}> ")
+		except IndexError:
+			log.warning("No prefixes configured in bot - only valid prefix will be a self mention")
+			self._boot_playing_msg = f"@{self.user.name} help"
+			self.default_prefix = f"<@{self.user.id}> "
+			self.default_prefix = f"<@!{self.user.id}> "
+			self.prefixes.append(f"<@{self.user.id}> ")
+			self.prefixes.append(f"<@!{self.user.id}> ")
 		await self.change_presence(activity=discord.Game(name=self._boot_playing_msg), status=discord.Status.online)
 		self.active = True
 		log.info(f"Bot is ready to go! We are @{client.user.name}#{client.user.discriminator} (id: {client.user.id})")
