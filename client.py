@@ -53,7 +53,7 @@ def log_message(message: discord.Message):
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.4.3"
+	__version__ = "0.4.5"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
@@ -98,8 +98,17 @@ class FrameworkClient(discord.Client):
 		self.prefixes = [x.lower() for x in config.prefixes]
 		try:
 			self.default_prefix = self.prefixes[0]
+			self._boot_playing_msg = f"{self.default_prefix}help"
+			self.prefixes.append(f"<@{self.user.id}> ")
+			self.prefixes.append(f"<@!{self.user.id}> ")
 		except IndexError:
-			log.warning("No prefixes configured in bot - it will be impossible to trigger the bot")
+			log.warning("No prefixes configured in bot - only valid prefix will be a self mention")
+			self._boot_playing_msg = f"@{self.user.name} help"
+			self.default_prefix = f"<@{self.user.id}> "
+			self.default_prefix = f"<@!{self.user.id}> "
+			self.prefixes.append(f"<@{self.user.id}> ")
+			self.prefixes.append(f"<@!{self.user.id}> ")
+
 
 	def run(self, *args, **kwargs) -> None:
 		self.first_execution = time.perf_counter()  # monotonic on both Windows and Linux which is :thumbsup:
@@ -155,7 +164,7 @@ class FrameworkClient(discord.Client):
 				await func()
 			except Exception as e:
 				log.warning("Ignoring exception in ready coroutine (see stack trace below)", include_exception=True)
-		await self.change_presence(activity=discord.Game(name=f"{self.default_prefix}help"), status=discord.Status.online)
+		await self.change_presence(activity=discord.Game(name=self._boot_playing_msg), status=discord.Status.online)
 		self.active = True
 		log.info(f"Bot is ready to go! We are @{client.user.name}#{client.user.discriminator} (id: {client.user.id})")
 
@@ -171,10 +180,12 @@ class FrameworkClient(discord.Client):
 		sys.exit(0)
 
 	async def on_message(self, message: discord.Message):
-		self.message_count += 1
-		log_message(message)
 		if not self.active:
 			return
+
+		self.message_count += 1
+		log_message(message)
+
 		for func in self._message_handlers:
 			try:
 				await func(message)
@@ -187,7 +198,7 @@ class FrameworkClient(discord.Client):
 			known_cmd, run_by = check_prefix(command, list(self._command_lookup.keys()))
 			if not known_cmd:
 				# unknown command branch
-				await message.channel.send("`Bad command or file name`\n(See bot help for help)")
+				await message.channel.send(self.unknown_command)
 				return
 			await self._command_lookup[run_by](command, message)
 
@@ -251,6 +262,8 @@ class FrameworkClient(discord.Client):
 			self._command_lookup[trigger] = new_cmd
 			for alias in aliases:  # name shadows but we don't care tbh it's only a tempvar
 				self._command_lookup[alias] = new_cmd
+			new_cmd.__name__ = func.__name__
+			new_cmd.__module__ = func.__module__
 
 			log.debug(f"registered new command handler {func.__name__}() with trigger '{trigger}' and aliases: {aliases}")
 			return new_cmd
