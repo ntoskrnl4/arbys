@@ -18,3 +18,11 @@ async def ntoskrnl_irl(message: discord.Message):
 			await message.add_reaction(discord.utils.find(lambda x: x.id == 486325601750351882, message.guild.emojis))
 		except:
 			pass
+		
+@client.message()
+async def rawr(message: discord.Message):
+	if (message.guild.id == 364480908528451584) and ("xd" in message.content.lower()):
+		try:
+			await message.channel.send("**rawr**")
+		except:  # thats ok, this is only a fun little joke
+			pass
