@@ -34,9 +34,10 @@ def get_any_member(target: int):
 
 @client.command(trigger=cmd_name, aliases=["objinfo", "userinfo"])
 async def command(command: str, message: discord.Message):
+	parts = command.split(" ")
 	try:
 		try:
-			u = await client.get_user_info(__common__.stripMentionsToID(command[6:]))
+			u = await client.get_user_info(__common__.stripMentionsToID(parts[1]))
 		except TypeError:
 			await message.channel.send("Invalid argument: integer ID or mentions are acceptable")
 			return
@@ -45,13 +46,13 @@ async def command(command: str, message: discord.Message):
 		else:
 			isUser = True
 
-		s = client.get_guild(__common__.stripMentionsToID(command[6:]))
+		s = client.get_guild(__common__.stripMentionsToID(parts[1]))
 		if s is None:
 			isServer = False
 		else:
 			isServer = True
 
-		c = client.get_channel(__common__.stripMentionsToID(command[6:]))
+		c = client.get_channel(__common__.stripMentionsToID(parts[1]))
 		if c is None:
 			isTextChannel = False
 			isVoiceChannel = False
@@ -75,7 +76,7 @@ async def command(command: str, message: discord.Message):
 		isTextChannel = True
 		isVoiceChannel = False
 
-	if isUser:
+	if isUser and not "--status" in command:
 		user_embed = discord.Embed(title="User Information", description=f"Information about {u.mention}", color=0x3127b3)
 		user_embed = user_embed.set_thumbnail(url=u.avatar_url_as(static_format="png", size=1024))
 		user_embed = user_embed.add_field(name="Human-Friendly User ID", value=u.name+"#"+u.discriminator)
@@ -98,6 +99,18 @@ async def command(command: str, message: discord.Message):
 														f"Mobile: {status_emoji(m.mobile_status)}\n"
 														f"Is on mobile? {m.is_on_mobile()}",
 												inline=False)
+		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
+
+	if isUser and "--status" in command:
+		if get_any_member(u.id) is not None:
+			m = get_any_member(u.id)
+		else:
+			return await message.channel.send("Cannot get status: I do not share any servers with this user (in order to get a user's status I must share a server with them)")
+		user_embed = discord.Embed(title="User Status", description=f"Apparent Status: {status_emoji(m.status)}\n"
+																	f"Desktop: {status_emoji(m.desktop_status)}\n"
+																	f"Web: {status_emoji(m.web_status)}\n"
+																	f"Mobile: {status_emoji(m.mobile_status)}\n"
+																	f"Is on mobile? {m.is_on_mobile()}",)
 		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
 	if isServer:
