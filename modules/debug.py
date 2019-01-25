@@ -96,7 +96,7 @@ async def command(command: str, message: discord.Message):
 												value=f"Apparent Status: {status_emoji(m.status)}\n"
 														f"Desktop: {status_emoji(m.desktop_status)}\n"
 														f"Web: {status_emoji(m.web_status)}\n"
-														f"Mobile: {status_emoji(m.mobile_status)}\n"
+														f"Mobile: {status_emoji(m.mobile_status)}\n",
 												inline=False)
 		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
