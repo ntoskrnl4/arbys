@@ -97,7 +97,6 @@ async def command(command: str, message: discord.Message):
 														f"Desktop: {status_emoji(m.desktop_status)}\n"
 														f"Web: {status_emoji(m.web_status)}\n"
 														f"Mobile: {status_emoji(m.mobile_status)}\n"
-														f"Is on mobile? {m.is_on_mobile()}",
 												inline=False)
 		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
