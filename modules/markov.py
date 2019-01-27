@@ -161,29 +161,31 @@ async def command(parts: str, message: discord.Message):
 		response.colour = 0xb81209
 		response.title = f"Markov function failed"
 		response.description = "Error running markov function: Unknown object specified"
-		response.set_footer(text=datetime.utcnow().__str__())
+		response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run by @{message.author.display_name}")
 
 	# run different outputs for different input types
 	if target_type == "user":
 		async with message.channel.typing():
 			target_member = message.guild.get_member(target.id)
+			if target_member is not None:
+				display_target = f"{target_member.display_name}"
+			else:
+				display_target = f"{target.name}#{target.discriminator}"
+
 			count, result = await get_user_markov(target.id, message, size, charlimit, attempts)
 
 			if result is None:
 				response.colour = 0xb81209
 				response.title = "Markov function failed"
 				response.description = "Unable to run markov chain - try running the command again"
-				response.set_author(name=target_member.display_name if target_member is not None else f"{target.name}#{target.discriminator}",
-									icon_url=target.avatar_url_as(format="png", size=128))
+				response.set_author(name=display_target, icon_url=target.avatar_url_as(format="png", size=128))
 				response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run by @{message.author.display_name} | {count} messages in input")
 				await message.channel.send(embed=response)
 				return
 
 			response.colour = 0x243b61
 			response.description = result
-			response.set_author(
-				name=target_member.display_name if target_member is not None else f"{target.name}#{target.discriminator}",
-				icon_url=target.avatar_url_as(format="png", size=128))
+			response.set_author(name=display_target, icon_url=target.avatar_url_as(format="png", size=128))
 			response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run by @{message.author.display_name} | {count} messages in input")
 		await message.channel.send(embed=response)
 		return
@@ -196,8 +198,8 @@ async def command(parts: str, message: discord.Message):
 				response.colour = 0xb81209
 				response.title = "Markov chain failed"
 				response.description = "Unable to run markov chain: Insufficient permissions to read channel history"
-				response.set_footer(text=datetime.utcnow().__str__())
-
+				response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run by @{message.author.display_name}")
+				response.set_author(name=f"#{target.name}")
 				# if we can't read the channel we should check if we can write to it also
 				try:
 					await message.channel.send(embed=response)
@@ -208,13 +210,15 @@ async def command(parts: str, message: discord.Message):
 				response.colour = 0xb81209
 				response.title = "Markov function failed"
 				response.description = "Unable to run markov chain - try running the command again"
-				response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run on #{target.name} | {count} messages in input")
+				response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run by @{message.author.display_name} | {count} messages in input")
+				response.set_author(name=f"#{target.name}")
 				await message.channel.send(embed=response)
 				return
 
 			response.colour = 0x243b61
 			response.description = result
-			response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run on #{target.name} | {count} messages in input")
+			response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run by @{message.author.display_name} | {count} messages in input")
+			response.set_author(name=f"#{target.name}")
 		await message.channel.send(embed=response)
 		return
 	return
