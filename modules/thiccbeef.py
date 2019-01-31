@@ -1,11 +1,13 @@
 from client import client
+
 import discord
 import random
 
 images = ["https://cdn.discordapp.com/attachments/364488710995050496/398597078873407499/vRutZA3.jpg",
-"https://vignette.wikia.nocookie.net/uncyclopedia/images/0/0d/Fat_cow.jpg",
-"https://i.ytimg.com/vi/J3X-ufvxmdo/hqdefault.jpg",
-"http://www.healthwantcare.com/wp-content/uploads/2014/07/cow-600x337.jpg",
+	"https://vignette.wikia.nocookie.net/uncyclopedia/images/0/0d/Fat_cow.jpg",
+	"https://i.ytimg.com/vi/J3X-ufvxmdo/hqdefault.jpg",
+	"http://www.healthwantcare.com/wp-content/uploads/2014/07/cow-600x337.jpg",
+	"https://cdn.discordapp.com/attachments/504486947146694668/540577741586694164/image0.png",
 ]
 
 
