@@ -1,59 +1,19 @@
-# 3.7: from __future__ import annotations
-from typing import List, Callable, Dict, Union
-from prefix import check_prefix
 from exceptions import UserBotError, HandlerError
+from typing import List, Callable, Dict, Union
 
-import discord
-import time
-import log
-import datetime
-import config
 import asyncio
-import traceback
+import config
+import datetime
+import discord
+import log
+import prefix
 import sys
-
-
-def log_message(message: discord.Message):
-	if not client.log_all_messages:
-		return
-	if not message.attachments:  # no attachments
-		try:
-			log.msg(
-					f"[{message.guild.name} - {message.guild.id}] "
-					f"[#{message.channel.name} - {message.channel.id}] "
-					f"[message id: {message.id}] "
-					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
-					f"{message.author.display_name}: {message.system_content}",
-					ts=message.created_at)
-		except AttributeError:
-			log.msg(
-					f"[DM] "
-					f"[message id: {message.id}] "
-					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
-					f"{message.system_content}",
-					ts=message.created_at)
-	else:
-		try:
-			log.msg(
-					f"[{message.guild.name} - {message.guild.id}] "
-					f"[#{message.channel.name} - {message.channel.id}] "
-					f"[message id: {message.id}] "
-					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
-					f"{message.author.display_name}: {message.system_content} "
-					f"{' '.join([x.url for x in message.attachments])}",
-					ts=message.created_at)
-		except AttributeError:
-			log.msg(
-					f"[DM] "
-					f"[message id: {message.id}] "
-					f"[{message.author.name}#{message.author.discriminator} - {message.author.id}] "
-					f"{message.system_content} "
-					f"{' '.join([x.url for x in message.attachments])}",
-					ts=message.created_at)
+import time
+import traceback
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.4.5"
+	__version__ = "0.5.0"
 
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
@@ -69,46 +29,41 @@ class FrameworkClient(discord.Client):
 	# Basic help dictionary should be a direct mapping of "command": "description". The prefix should not be included,
 	# as it will be automatically inserted into the listed title for each command. The description for each command
 	# should be a one-line description, although it can be multiple lines if necessary. Do not include aliases, nor
-	# argument information, and shorten decsriptions as much as possible while maintaining easy understandability.
+	# argument information, and keep descriptions terse.
 
 	_long_help: Dict[str, Dict[str, str]] = {}
 	# Long help should be a dictionary of dictionaries; keys should be the command, and the fields of the dictionary
 	# should be a mapping of title->content in the embed.
 
 	unknown_command = "`Bad command or file name`\n(See bot help for help)"
+	# String that will be given when a command is not found.
 
 	cmd_aliases: Dict[str, List[str]] = {}
+	# Command -> aliases
 	alias_lookup: Dict[str, str] = {}
+	# Alias -> command
 
-	cfg_bot_name = config.bot_name
+	bot_name = config.bot_name
 
 	prefixes: List[str] = []
 	default_prefix: str = None
 	log_all_messages: bool = config.log_messages
-	message_count = 0
-	command_count = 0
+	message_count: int = 0
+	command_count: int = 0
+	first_execution: float = None
+	first_execution_dt: datetime.datetime = None
 
 	def __init__(self, *args, **kwargs) -> None:
-		self.first_execution: float = None
-		self.first_execution_dt: datetime.datetime = None
 		super().__init__(*args, **kwargs)
-		self.command_count: int = 0
-		self.message_count: int = 0
+		self._has_been_readied: bool = False
 		self.active: bool = False
 		self.prefixes = [x.lower() for x in config.prefixes]
 		try:
 			self.default_prefix = self.prefixes[0]
-			self._boot_playing_msg = f"{self.default_prefix}help"
-			self.prefixes.append(f"<@{self.user.id}> ")
-			self.prefixes.append(f"<@!{self.user.id}> ")
+			self._no_boot_prefixes = False
 		except IndexError:
 			log.warning("No prefixes configured in bot - only valid prefix will be a self mention")
-			self._boot_playing_msg = f"@{self.user.name} help"
-			self.default_prefix = f"<@{self.user.id}> "
-			self.default_prefix = f"<@!{self.user.id}> "
-			self.prefixes.append(f"<@{self.user.id}> ")
-			self.prefixes.append(f"<@!{self.user.id}> ")
-
+			self._no_boot_prefixes = True
 
 	def run(self, *args, **kwargs) -> None:
 		self.first_execution = time.perf_counter()  # monotonic on both Windows and Linux which is :thumbsup:
@@ -118,37 +73,29 @@ class FrameworkClient(discord.Client):
 			raise UserBotError("Non-bot accounts are not supported")
 
 		# checks to make sure everything is a coroutine
-		if config.debug:
+		if any([not asyncio.iscoroutinefunction(x) for x in self._ready_handlers]):
+			log.critical("not all ready functions are coroutines")
+			raise HandlerError("not all ready functions are coroutines")
+		if any([not asyncio.iscoroutinefunction(x) for x in self._shutdown_handlers]):
+			log.critical("not all shutdown functions are coroutines")
+			raise HandlerError("not all shutdown functions are coroutines")
+		if any([not asyncio.iscoroutinefunction(x) for x in self._message_handlers]):
+			log.critical("not all message handlers are coroutines")
+			raise HandlerError("not all message handlers are coroutines")
+		if any([not asyncio.iscoroutinefunction(x) for x in self._member_join_handlers]):
+			log.critical("not all member join handlers are coroutines")
+			raise HandlerError("not all member join handlers are coroutines")
+		if any([not asyncio.iscoroutinefunction(x) for x in self._member_remove_handlers]):
+			log.critical("not all member leave handlers are coroutines")
+			raise HandlerError(f"not all member leave handlers are coroutines")
+		if any([not asyncio.iscoroutinefunction(x) for x in self._reaction_add_handlers]):
+			log.critical("not all reaction add handlers are coroutines")
+			raise HandlerError(f"not all reaction add handlers are coroutines")
+		if any([not asyncio.iscoroutinefunction(x) for x in self._reaction_remove_handlers]):
+			log.critical("not all reaction remove handlers are coroutines")
+			raise HandlerError(f"not all reaction remove handlers are coroutines")
 
-			if any([not asyncio.iscoroutinefunction(x) for x in self._ready_handlers]):
-				log.critical("not all ready functions are coroutines")
-				raise HandlerError("not all ready functions are coroutines")
-
-			if any([not asyncio.iscoroutinefunction(x) for x in self._shutdown_handlers]):
-				log.critical("not all shutdown functions are coroutines")
-				raise HandlerError("not all shutdown functions are coroutines")
-
-			if any([not asyncio.iscoroutinefunction(x) for x in self._message_handlers]):
-				log.critical("not all message handlers are coroutines")
-				raise HandlerError("not all message handlers are coroutines")
-
-			if any([not asyncio.iscoroutinefunction(x) for x in self._member_join_handlers]):
-				log.critical("not all member join handlers are coroutines")
-				raise HandlerError("not all member join handlers are coroutines")
-
-			if any([not asyncio.iscoroutinefunction(x) for x in self._member_remove_handlers]):
-				log.critical("not all member leave handlers are coroutines")
-				raise HandlerError(f"not all member leave handlers are coroutines")
-
-			if any([not asyncio.iscoroutinefunction(x) for x in self._reaction_add_handlers]):
-				log.critical("not all reaction add handlers are coroutines")
-				raise HandlerError(f"not all reaction add handlers are coroutines")
-
-			if any([not asyncio.iscoroutinefunction(x) for x in self._reaction_remove_handlers]):
-				log.critical("not all reaction remove handlers are coroutines")
-				raise HandlerError(f"not all reaction remove handlers are coroutines")
-
-			log.debug("all functions good to run (are coroutines)")
+		log.debug("all functions good to run (are coroutines)")
 
 		log.info(f"Bot started at {str(self.first_execution_dt)} ({self.first_execution})")
 		super().run(*args, **kwargs)
@@ -158,13 +105,30 @@ class FrameworkClient(discord.Client):
 	# ==========
 
 	async def on_ready(self):
+		if self._has_been_readied:
+			await self.change_presence(activity=discord.Game(name=self.boot_playing_msg), status=discord.Status.online)
+			log.info("Bot reconnected to Discord")
+			return
+
+		if self._no_boot_prefixes:
+			# we need to add our own then
+			self.default_prefix = f"<@{self.user.id}> "
+			self.prefixes.append(f"<@{self.user.id}> ")
+			self.prefixes.append(f"<@!{self.user.id}> ")
+			self.boot_playing_msg = f"@{self.user.name} help"
+		else:
+			self.prefixes.append(f"<@{self.user.id}> ")
+			self.prefixes.append(f"<@!{self.user.id}> ")
+			self.boot_playing_msg = f"{self.default_prefix}help"
+
 		for func in self._ready_handlers:
 			try:
 				await func()
 			except Exception as e:
 				log.warning("Ignoring exception in ready coroutine (see stack trace below)", include_exception=True)
-		await self.change_presence(activity=discord.Game(name=self._boot_playing_msg), status=discord.Status.online)
+		await self.change_presence(activity=discord.Game(name=self.boot_playing_msg), status=discord.Status.online)
 		self.active = True
+		self._has_been_readied = True
 		log.info(f"Bot is ready to go! We are @{client.user.name}#{client.user.discriminator} (id: {client.user.id})")
 
 	async def on_shutdown(self):
@@ -183,7 +147,6 @@ class FrameworkClient(discord.Client):
 			return
 
 		self.message_count += 1
-		log_message(message)
 
 		for func in self._message_handlers:
 			try:
@@ -191,10 +154,10 @@ class FrameworkClient(discord.Client):
 			except Exception:
 				log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
 
-		is_cmd, this_prefix = check_prefix(message.content, self.prefixes)
+		is_cmd, this_prefix = prefix.check_bot_prefix(message.content, self.prefixes)
 		if is_cmd:
 			command = message.content[len(this_prefix):]
-			known_cmd, run_by = check_prefix(command, list(self._command_lookup.keys()))
+			known_cmd, run_by = prefix.check_command_prefix(command, list(self._command_lookup.keys()))
 			if not known_cmd:
 				# unknown command branch
 				await message.channel.send(self.unknown_command)
@@ -309,6 +272,10 @@ class FrameworkClient(discord.Client):
 		log.debug(f"registered new shutdown handler {func.__name__}()")
 		return func
 
+	# ==========
+	# Other Functions
+	# ==========
+
 	def basic_help(self, title: str, desc: str, include_prefix: bool = True):
 		# check first that nothing's blank
 		if title.strip() == "" or desc.strip() == "":
@@ -331,4 +298,4 @@ class FrameworkClient(discord.Client):
 		log.debug(f"registered new long_help entry for command {cmd}")
 
 
-client = FrameworkClient(status=discord.Status(config.boot_status))
+client = FrameworkClient(status=discord.Status(config.boot_status), max_messages=config.message_cache_size)

@@ -6,5 +6,7 @@ from key import token
 # from modules import X
 
 from modules import help
+# from modules import message_log
+from modules import ping
 
 client.run(token)

@@ -26,13 +26,11 @@ boot_status = "dnd"
 
 # All the prefixes the bot will use. The first one in this list will be considered the default.
 prefixes = [
-	# It is recommended to put the bot's own user ID here (replace bot_id with its id and uncomment those lines)
-	# "<@bot_id> ",
-	# "<@!bot_id> ",
 ]
-
-# Enables extra checks and more debug info about the bot
-debug = True
 
 # A name for your bot
 bot_name = ""
+
+# Size of the bot's internal message cache. It may be sometimes useful to use the cache so
+# an option is given here to make it bigger. The default cache size in discord.py is 5000
+message_cache_size = 5000

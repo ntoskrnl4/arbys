@@ -1,7 +1,7 @@
+from client import client
+
 import datetime
 import discord
-
-from client import client
 
 
 @client.command(trigger="help", aliases=[])
@@ -9,7 +9,7 @@ async def help_command(command: str, message: discord.Message):
 
 	if command.lower() == "help":
 		# basic help route
-		embed = discord.Embed(title=f"Help for {client.cfg_bot_name}", description=f"For help on a specific command, run `{client.default_prefix}help <command>`", colour=0x06b206)
+		embed = discord.Embed(title=f"Help for {client.bot_name}", description=f"For help on a specific command, run `{client.default_prefix}help <command>`", colour=0x06b206)
 
 		for cmd, desc in client._basic_help.items():
 			embed = embed.add_field(name=f"{cmd}", value=desc, inline=False)
