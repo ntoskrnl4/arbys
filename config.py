@@ -1,5 +1,4 @@
 # Configuration file for the bot, settings such as logging options, whatever
-# The bot's token is knot stored here, it is actually stored in a "token" variable in a file named "key.py".
 
 # log settings, required for use. levels go in order of increasing verbosity
 # Absolutely nothing (disable logging there): -1
@@ -21,21 +20,18 @@ logfile_encoding = "UTF-8"  # UTF-8 recommended because emojis
 # log every single message that runs through the bot. For high-traffic bots this should be False (default: True)
 log_messages = True
 
-# Bot's default online status when it logs in. Recommended dnd to indicate it is online but still loading.
+# Bot's default online status when it logs in. Should usually be dnd to indicate it is online but still loading.
 # Valid values are "online", "idle", "dnd" (default) or "do_not_disturb", and "invisible".
 boot_status = "dnd"
 
 # All the prefixes the bot will use. The first one in this list will be considered the default.
 prefixes = [
 	"cqdx ",
-	"! ",
-	"!",
-	"<@398599948557615130> ",
-	"<@!398599948557615130> ",
 ]
-
-# Enables extra checks and more debug info about the bot
-debug = True
 
 # A name for your bot
 bot_name = "Arby's"
+
+# Size of the bot's internal message cache. It may be sometimes useful to use the cache so
+# an option is given here to make it bigger. The default cache size in discord.py is 5000
+message_cache_size = 50000

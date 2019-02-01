@@ -16,12 +16,12 @@ else:
 
 cmd_name = "stats"
 
-client.basic_help(title=cmd_name, desc=f"shows various running statistics of {client.cfg_bot_name}")
+client.basic_help(title=cmd_name, desc=f"shows various running statistics of {client.bot_name}")
 
 detailed_help = {
 	"Usage": f"{client.default_prefix}{cmd_name}",
-	"Description": f"This command shows different available statistics of {client.cfg_bot_name}, including servers, uptime, and commands run.",
-	"Related": f"`{client.default_prefix} info` - shows information about {client.cfg_bot_name}",
+	"Description": f"This command shows different available statistics of {client.bot_name}, including servers, uptime, and commands run.",
+	"Related": f"`{client.default_prefix} info` - shows information about {client.bot_name}",
 }
 client.long_help(cmd=cmd_name, mapping=detailed_help)
 

@@ -1,6 +1,6 @@
-import discord
-
 from client import client
+
+import discord
 
 
 @client.command(trigger="ping", aliases=["p"])
