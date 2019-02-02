@@ -2,7 +2,7 @@
 A simplified framework for creating modular Discord bots
 
 ---
-### Features
+## Features
 * Fully modular design - all user code goes into modules in the `modules/` directory
 * No defined arguments or names for commands - unlike discord.py's Bot extension, functions' names have no relation to what triggers them
 * Not limited to commands
@@ -22,36 +22,33 @@ A simplified framework for creating modular Discord bots
 * Fast: Less than 30ms (typical) between message received and command triggered 
 * Custom logging designed to be fast, with low overhead
 
-###Setup
+## Setup
 Before writing code for the bot you must consider what system it will run on. For 24/7 use a decently powerful computer
 should be used with a stable Internet connection is recommended, ideally running Linux as well. A Raspberry Pi is
 perfect for this as it uses Linux, is low cost, and can be left alone.
 
-1. If you haven't already, install the following:
-	* Python 3.6+
-	* discord.py rewrite
-		* To do this install via pip: `pip install -U https://github.com/Rapptz/discord.py/archive/rewrite.zip#egg=discord.py[voice]` 
-			* `[voice]` at the end of that line is only necessary if voice functionality is desired.
+1. If you haven't already, install discord.py rewrite:
+	* Via pip: `pip install -U https://github.com/Rapptz/discord.py/archive/rewrite.zip#egg=discord.py[voice]` 
+		* `[voice]` at the end of that line is only necessary if voice functionality is desired.
 2. Clone the repository to the server.
 3. Create a file named `key.py` in the main directory. Within, add the line `token = ""` and fill in your bot's token.
 4. Change `config.py` to your desired settings.
 5. `modules/` contains all of your code, along with three pre-supplied modules: a help command, a ping command, and a
-message logging command.
+message logging command. These files are what you should edit.
+6. After everything is how you want, run `main.py` in Python 3.6+.
 
-######Warning
+### Warning
 Before enabling the message logging module, it is *very highly recommended* that you __thoroughly__ read through Discord's
 bot development terms of service, as there are precautions and terms that must be taken when logging user messages.
 [Link](https://discordapp.com/developers/docs/legal)
  
-###Writing modules
+## Writing modules
 The main flexibility of the bot comes with respect to its modules. Modules are added by creating a new file in the
-`modules/` directory with a name of your choice and adding relevant code to the file.
+`modules/` directory with a name of your choice and adding relevant code to the file. After creating the module, it must then be imported into main.py: `from modules import <name>`
 
-```
 Note: It is highly recommended that the user become familiar with the discord.py primary API page, as it is useful when 
 developing modules:
 https://discordpy.readthedocs.io/en/rewrite/api.html
-```
 
 Every module in order to work with the bot must import it into the file: `from client import client`  
 Importing the `discord` module is also highly recommended as it allows you to use typing and embeds and other features
@@ -70,18 +67,18 @@ import os
 import sys
 ```
 
-####Help
+### Help
 The framework includes two kinds of help; a "basic help" displayed as the bot's primary help, and a "detailed help" that
 shows in depth information for a command. Modules can add as many or as few objects to these help commands as they want.
 
-#####Basic help
+#### Basic help
 An entry for basic help can be added to the bot by running the function `client.basic_help(title, description)`:
 * `title: str` is the title of the command. Should typically just be the trigger for the command, eg. `ping`
 * `description: str` is the description for the command. This should be one sentence that describes briefly what the
 command does. Don't include a command's aliases or arguments in here as those are in a command's detailed help.
 * `include_prefix: bool = True` (optional) automatically adds in the bot's prefix to the title.
 
-#####Detailed help
+#### Detailed help
 Modules can add detailed help by running the `client.long_help(cmd, mapping)` command:
 * `cmd: str` - command to bind help to.
 * `mapping: Dict[str, str]` - A direct mapping of title -> content that will be shown in the command's help embed.
@@ -90,7 +87,7 @@ Aliases do not need to be added in here as they will be added for you, if applic
 	* `Arguments` - explanation of any and all arguments in the command
 	* `Description` - a written English explanation of what the command does
 
-#####Example
+#### Example
 ```python
 client.basic_help("ping", "Returns the bot's latency to its connected API endpoint.")
 
@@ -102,7 +99,7 @@ client.long_help("ping", detailed_help)
 
 ``` 
 
-####Adding a command
+### Adding a command
 In order to add a command, a coroutine must be created with the arguments `command` and `message`, and the function
 must use the decorator `@client.command()`. Arguments for the decorator include `trigger=""` which defines what command
 will trigger your function, and an optional argument `aliases=[]`, a list of `str`s that also trigger the command.
@@ -115,7 +112,7 @@ async def show_time(command: str, message: discord.Message):
 Notice that the function's arguments include types in them, which is highly recommended to remind you what the variables
 are, and to tell your IDE what the variables are if you run the code in an IDE.  
 
-####Responding to a non-command message (Adding a message handler)
+### Responding to a non-command message (Adding a message handler)
 The framework allows modules to also parse every message running through the bot as well. These message handlers include
 messages that trigger commands, and are run before commands are. To add a message handler a coroutine must be created 
 with a single argument `message` (type `discord.Message`), and the function must be decorated with `@client.message()`. 
@@ -129,7 +126,7 @@ async def react(message: discord.Message):
 	# your code here...
 ```
 
-####Reacting to a member_join or member_leave event
+### Reacting to a member_join or member_leave event
 Modules can have a reaction to a member join or leave event, by creating a coroutine with the argument `member`
 (type `discord.Member`) with the decorators `@client.member_join` or `@client.member_remove`. This can be used for example 
 to post information about the user in a moderator-only channel when a new user joins the server, or to post information 
@@ -146,7 +143,7 @@ async def goodbye(member: discord.Member):
 	await channel.send(f"Goodbye, {member.display_name}.")
 ```
 
-####Reacting to...reactions
+### Reacting to...reactions
 A function can be triggered by the addition or removal of a reaction from a message with the decorators
 `@client.reaction_add` or `@client.reaction_remove`. As with other functions they must be coroutines. Arguments for these
 handlers are `reaction` (type `discord.Reaction`) and `source` (type `discord.Member`). Info about these arguments can
@@ -154,7 +151,7 @@ be found [here](https://discordpy.readthedocs.io/en/rewrite/api.html#discord.on_
 must be in the cache for these events to be run; the size of the cache can be increased with the `message_cache_size` 
 variable in `config.py` at the cost of more memory.
 
-####Running a startup or shutdown function
+### Running a startup or shutdown function
 Some modules may desire for a function to be run once when the bot starts up and connects to Discord; this can be done
 by creating a coroutine with the decorator `@client.ready`. This can be useful for loading persistent-state information
 into a module for later use with a command, as an example. These ready functions are only run once when the bot 
@@ -177,12 +174,12 @@ async def save_data():
 	# your code here...
 ```
 
-####Other events
+### Other events
 What's listed above curently covers all the events implemented in the current version of this framework, however as time
 goes by the rest of the events will be added as well. If you desire an event for something that's not here, please feel
 free to send a PR. 
 
-###Sample
+## Sample
 An active, in-use sample of this framework can be found at 
 [young-amateurs-rc/arbys](https://github.com/young-amateurs-rc/arbys), 
 my Discord bot for the Young Hams community.
