@@ -1,16 +1,15 @@
-from concurrent.futures import ProcessPoolExecutor
-from typing import List, Dict, Union
+from client import client
 from collections import Counter
 from modules import __common__
-from client import client
+from typing import List, Dict, Union
+
+import asyncio
 import datetime
 import discord
-import asyncio
-import numpy
-import time
 import log
 import os
 import re  # wish me luck
+import time
 
 try:
 	from matplotlib import pyplot as plot
@@ -93,6 +92,7 @@ def match_user_id(string) -> Union[int, None]:
 		return int(re_user_raw.search(string).group()[-19:-1])
 	except AttributeError:
 		return None
+
 
 @client.command(trigger="logstat")
 async def logstat(command: str, message: discord.Message):

@@ -1,10 +1,11 @@
-from datetime import datetime
 from client import client
-import threading
+from datetime import datetime
+
 import discord
-import socket
-import time
 import os
+import socket
+import threading
+import time
 
 try:
 	import psutil
@@ -52,10 +53,6 @@ async def statistics(command: str, message: discord.Message):
 		await message.channel.send(f"Uptime:\n`{up:.3f}` seconds\n`{up/86400:.4f}` days")
 		return
 
-	if "--pid" in command:
-		await message.channel.send(f"Bot process ID: {os.getpid()}")
-		return
-
 	async with message.channel.typing():
 
 		if has_psutil:
@@ -73,7 +70,7 @@ async def statistics(command: str, message: discord.Message):
 				cpu_text += f"**CPU {index}:** {v}%\n"
 				index += 1
 
-		embed = discord.Embed(title=f"{client.cfg_bot_name} stats", description=discord.Embed.Empty, color=0x404040)
+		embed = discord.Embed(title=f"{client.bot_name} stats", description=discord.Embed.Empty, color=0x404040)
 		up = time.perf_counter() - client.first_execution
 		embed = embed.add_field(name="Uptime", value=f"{up:.3f} seconds")
 		embed = embed.add_field(name="Servers", value=len(client.guilds))

@@ -1,11 +1,12 @@
-from modules import __common__
-from datetime import datetime
 from client import client
+from datetime import datetime
+from modules import __common__
+
 import discord
-import time
 import key
 import log
 import os
+import time
 
 
 client.basic_help(title="exit", desc="Cleans up and shuts down the bot.")
@@ -37,7 +38,7 @@ async def command(command: str, message: discord.Message):
 			return
 		if target_pid == os.getpid():
 			await message.channel.send("Shutting down bot...")
-			await message.channel.send(f"Uptime: {time.perf_counter() - client.first_execution:.3f} seconds ({(time.perf_counter() - client.first_execution)/86400:.3f} days)")
+			await message.channel.send(f"Uptime: { time.perf_counter() - client.first_execution:.3f} seconds ({(time.perf_counter() - client.first_execution) / 86400:.3f} days)")
 			log.info(f"Bot shutdown initiated at {datetime.utcnow().__str__()} by {message.author.name}#{message.author.discriminator}")
 			await client.on_shutdown()
 	return

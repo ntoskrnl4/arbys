@@ -6,13 +6,13 @@ from key import token
 # from modules import X
 
 from modules import _debug
+from modules import about
 from modules import ares
 from modules import beef
 from modules import call
 from modules import chicken
 from modules import cond
 from modules import cqdx
-from modules import debug
 from modules import emoji_stats
 from modules import exec
 from modules import exit
@@ -29,6 +29,7 @@ from modules import morse
 from modules import music
 from modules import n2yo
 from modules import nou
+from modules import ntp
 from modules import phonehand
 from modules import ping
 from modules import pingreact
@@ -38,6 +39,7 @@ from modules import stats
 from modules import thiccbeef
 from modules import thiccom
 from modules import thiccseal
+from modules import time
 from modules import tubez
 from modules import unmorse
 from modules import uwu
