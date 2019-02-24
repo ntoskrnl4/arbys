@@ -3,10 +3,14 @@ from client import client
 import discord
 import log
 
+do_not_log_channels = [
+]
 
 @client.message()
 async def log_messages(message: discord.Message):
 	if not client.log_all_messages:
+		return
+	if message.channel.id in do_not_log_channels:
 		return
 
 	if not message.attachments:  # no attachments
