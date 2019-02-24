@@ -177,10 +177,29 @@ async def save_data():
 	# your code here...
 ```
 
+####Running a background task
+A background task independent of any trigger may be desired. In that case, the decorator `@client.background()` can  
+provide this functionality for you, including waiting until the bot is online, only running while the bot is active, and
+automatic handling of periodic tasks.
+
+To use the decorator, create a coroutine with the code that you want to be run periodically. No loop code or 
+`wait_until_ready()` should be included as this will be done automatically. To add the coroutine as a periodic 
+background task, add the decorator `@client.background()`:
+* `period: int` - Period of which the function should be run, in seconds.
+
+For example:
+```python
+@client.background(period=60)
+async def background_task():
+	log.debug("Background task is running")
+	# your code here...
+```
+This will run `background_task()` every 60 seconds, until the bot is shut down.
+
 ####Other events
 What's listed above curently covers all the events implemented in the current version of this framework, however as time
 goes by the rest of the events will be added as well. If you desire an event for something that's not here, please feel
-free to send a PR. 
+free to send a PR or an issue with your request. 
 
 ###Sample
 An active, in-use sample of this framework can be found at 

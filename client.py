@@ -13,8 +13,9 @@ import traceback
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.5.0"
+	__version__ = "0.5.1"
 
+	_background_tasks: List[Callable[[], None]] = []
 	_ready_handlers: List[Callable[[], None]] = []
 	_shutdown_handlers: List[Callable[[], None]] = []
 	_message_handlers: List[Callable[[discord.Message], None]] = []
@@ -195,6 +196,27 @@ class FrameworkClient(discord.Client):
 	# ==========
 	# Decorators
 	# ==========
+
+	def background(self, period: int):
+		def inside(func: Callable[[], None]):
+			nonlocal period
+
+			async def modified_function():
+				await self.wait_until_ready()
+				while not self.is_closed():
+					try:
+						if self.active:
+							await func()
+					except Exception:
+						log.error(f"Error processing background task {func.__name__}():", include_exception=True)
+					await asyncio.sleep(period)
+
+			self._background_tasks.append(self.loop.create_task(modified_function()))
+			modified_function.__name__ = func.__name__
+			modified_function.__module__ = func.__module__
+			log.debug(f"registered new background task {func.__name__}() with period {period} seconds")
+			return modified_function
+		return inside
 
 	def command(self, trigger: str, aliases: List[str] = None):
 		if aliases is None:
