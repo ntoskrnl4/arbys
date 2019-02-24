@@ -104,6 +104,26 @@ async def logstat(command: str, message: discord.Message):
 	profiling = "--profile" in message.content
 
 	async with message.channel.typing():
+		# now we can actually see what our user wants of us
+		# args: logstat 30(days) users 25(top X)
+		# first we need to check if there's enough arguments
+		parts = command.split(" ")
+
+		# check if they want textual format
+		try:
+			parts.pop(parts.index("--text"))
+			use_mpl = False
+		except ValueError:
+			use_mpl = True if use_mpl else False
+
+		if len(parts) < 3:
+			await message.channel.send("Not enough arguments provided to command. See help for help.")
+			return
+		try:
+			limit = datetime.datetime.utcnow()-datetime.timedelta(days=int(parts[1]))
+		except ValueError:
+			await message.channel.send("First argument to command `logstat` must be number of days behind log to check, as an int")
+			return
 
 		start = time.perf_counter()
 		if "--test" not in message.content:
@@ -128,8 +148,10 @@ async def logstat(command: str, message: discord.Message):
 		parsed_logs: List[Dict] = []
 
 		# we'll now loop through all the lines and parse them into dicts
-		start = time.perf_counter()
 		i = 0
+		if profiling:
+			await message.channel.send(f"{len(all_log_lines)} lines to process")
+		start = time.perf_counter()
 		for line in all_log_lines:
 			new_entry = {}
 
@@ -197,27 +219,6 @@ async def logstat(command: str, message: discord.Message):
 		end = time.perf_counter()
 		if profiling:
 			await message.channel.send(f"profiling: Processing time to parse all log lines: {(end-start)*1000:.4f} ms ({((end-start)*1_000_000)/len(all_log_lines):.3f} us/line)")
-
-		# now we can actually see what our user wants of us
-		# args: logstat 30(days) users 25(top X)
-		# first we need to check if there's enough arguments
-		parts = command.split(" ")
-
-		# check if they want textual format
-		try:
-			parts.pop(parts.index("--text"))
-			use_mpl = False
-		except ValueError:
-			use_mpl = True if use_mpl else False
-
-		if len(parts) < 3:
-			await message.channel.send("Not enough arguments provided to command. See help for help.")
-			return
-		try:
-			limit = datetime.datetime.utcnow()-datetime.timedelta(days=int(parts[1]))
-		except ValueError:
-			await message.channel.send("First argument to command `logstat` must be number of days behind log to check, as an int")
-			return
 
 		await asyncio.sleep(0.1)
 

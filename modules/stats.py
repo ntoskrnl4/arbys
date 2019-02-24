@@ -72,7 +72,7 @@ async def statistics(command: str, message: discord.Message):
 
 		embed = discord.Embed(title=f"{client.bot_name} stats", description=discord.Embed.Empty, color=0x404040)
 		up = time.perf_counter() - client.first_execution
-		embed = embed.add_field(name="Uptime", value=f"{up:.3f} seconds")
+		embed = embed.add_field(name="Uptime", value=f"{up:.3f} seconds\n{up/86400:.4f} days")
 		embed = embed.add_field(name="Servers", value=len(client.guilds))
 		embed = embed.add_field(name="Total commands run in all servers since last reboot", value=client.command_count, inline=False)
 		mps = client.message_count / up

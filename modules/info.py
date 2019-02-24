@@ -109,11 +109,12 @@ async def command(command: str, message: discord.Message):
 			m = get_any_member(u.id)
 		else:
 			return await message.channel.send("Cannot get status: I do not share any servers with this user (in order to get a user's status I must share a server with them)")
-		user_embed = discord.Embed(title="User Status", description=f"Apparent Status: {status_emoji(m.status)}\n"
+		user_embed = discord.Embed(description=f"Apparent Status: {status_emoji(m.status)}\n"
 																	f"Desktop: {status_emoji(m.desktop_status)}\n"
 																	f"Web: {status_emoji(m.web_status)}\n"
 																	f"Mobile: {status_emoji(m.mobile_status)}\n"
 																	f"Is on mobile? {m.is_on_mobile()}",)
+		user_embed = user_embed.set_author(icon_url=m.avatar_url_as(format="png", size=128), name=m.display_name)
 		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
 	if isServer:
