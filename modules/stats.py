@@ -56,6 +56,10 @@ async def statistics(command: str, message: discord.Message):
 	async with message.channel.typing():
 
 		if has_psutil:
+			try:
+				temp = psutil.sensors_temperatures()['cpu-thermal'][0].current
+			except (AttributeError, KeyError):
+				temp = None
 			self = psutil.Process()
 			cpu_self = self.cpu_percent(interval=1)
 			self_m_used = self.memory_info().rss
@@ -84,6 +88,7 @@ async def statistics(command: str, message: discord.Message):
 		embed = embed.add_field(name="Bot Process ID", value=os.getpid())
 		if include_hostname: embed = embed.add_field(name="Host Machine Name", value=socket.gethostname())
 		if has_psutil:
+			embed = embed.add_field(name="Host CPU temperature", value=f"{int(temp) if temp is not None else 'Unknown'}")
 			embed = embed.add_field(name="Process Memory Usage", value=f"{self_m_used/(1024*1024):.3f} MiB")
 			embed = embed.add_field(name="Process CPU Usage (relative to one core)", value=f"{cpu_self:.1f}%")
 			embed = embed.add_field(name="System RAM Usage", value=f"{m_used/(1024*1024):.1f}/{m_total/(1024*1024):.1f} MiB ({(m_used/m_total)*100:.2f}%)")

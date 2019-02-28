@@ -13,7 +13,7 @@ import traceback
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.5.1"
+	__version__ = "0.5.1.1"
 
 	_background_tasks: List[Callable[[], None]] = []
 	_ready_handlers: List[Callable[[], None]] = []
@@ -205,8 +205,7 @@ class FrameworkClient(discord.Client):
 				await self.wait_until_ready()
 				while not self.is_closed():
 					try:
-						if self.active:
-							await func()
+						await func()
 					except Exception:
 						log.error(f"Error processing background task {func.__name__}():", include_exception=True)
 					await asyncio.sleep(period)

@@ -33,9 +33,11 @@ async def get_user_markov(user: int, message: discord.Message, size: int, charli
 	await asyncio.sleep(0.1)
 
 	# backup code if that's not enough
-	if len(input_messages) < 500:
+	if len(input_messages) < 400:
 		input_messages = []
 		for ch in message.guild.text_channels:
+			if ch.id in forbidden_channels:
+				continue
 			try:
 				input_messages.extend([x for x in await ch.history(limit=500).flatten() if x.author.id == user])
 			except:
