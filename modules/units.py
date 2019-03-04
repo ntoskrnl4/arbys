@@ -24,8 +24,14 @@ async def convert_units(command: str, message: discord.Message):
 		return
 	if len(parts) == 2:
 		proc = subprocess.Popen(["units", "-t", parts[1]], stdout=subprocess.PIPE)
-	if len(parts) > 2:
+	if len(parts) == 3:
 		proc = subprocess.Popen(["units", "-t", parts[1], parts[2]], stdout=subprocess.PIPE)
+	if len(parts) == 4:
+		proc = subprocess.Popen(["units", "-t", f"'{parts[1]} {parts[2]}'", parts[3]], stdout=subprocess.PIPE)
+	if len(parts) == 5:
+		proc = subprocess.Popen(["units", "-t", f"'{parts[1]} {parts[2]}'", f"'{parts[3]} {parts[4]}'"], stdout=subprocess.PIPE)
+
+
 
 
 	await asyncio.sleep(0.25)  # Instead of blocking on a timeout we'll just sleep() and use a small timeout
