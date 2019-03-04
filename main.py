@@ -41,6 +41,7 @@ from modules import thiccom
 from modules import thiccseal
 from modules import time
 from modules import tubez
+from modules import units
 from modules import unmorse
 from modules import uwu
 
