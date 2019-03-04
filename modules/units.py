@@ -23,11 +23,10 @@ async def convert_units(command: str, message: discord.Message):
 		await message.channel.send(f"Need more arguments to run command. See command help for help.")
 		return
 	if len(parts) == 2:
-		parts += [""]
+		proc = subprocess.Popen(["units", "-t", parts[1]], stdout=subprocess.PIPE)
+	if len(parts) > 2:
+		proc = subprocess.Popen(["units", "-t", parts[1], parts[2]], stdout=subprocess.PIPE)
 
-	src_unit = parts[1]
-	dst_unit = parts[2]
-	proc = subprocess.Popen(["units", "-t", src_unit, dst_unit], stdout=subprocess.PIPE)
 
 	await asyncio.sleep(0.25)  # Instead of blocking on a timeout we'll just sleep() and use a small timeout
 	stdout, stderr = proc.communicate(timeout=0.01)
