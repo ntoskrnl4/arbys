@@ -29,7 +29,7 @@ async def convert_units(command: str, message: discord.Message):
 	dst_unit = parts[2]
 	proc = subprocess.Popen(["units", "-t", src_unit, dst_unit], stdout=subprocess.PIPE)
 
-	await asyncio.sleep(0.25)  # Instead of blocking on a timeout we'll just sleep() and use an instantaneous timeout
-	stdout, stderr = proc.communicate(timeout=10**-6)
+	await asyncio.sleep(0.25)  # Instead of blocking on a timeout we'll just sleep() and use a small timeout
+	stdout, stderr = proc.communicate(timeout=0.01)
 	await message.channel.send(stdout.decode())
 	return
