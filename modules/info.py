@@ -123,7 +123,7 @@ async def command(command: str, message: discord.Message):
 		server_embed = server_embed.add_field(name="Name", value=s.name)
 		server_embed = server_embed.add_field(name="Raw ID", value=s.id)
 		icon = s.icon_url_as(format="png", size=1024)
-		if icon == "":
+		if icon is False:
 			icon = "[no custom icon]"
 		server_embed = server_embed.add_field(name="Icon URL", value=icon)
 		server_embed = server_embed.add_field(name="Owner", value=f"{s.owner.name}#{s.owner.discriminator} ({s.owner.id})")
