@@ -17,7 +17,6 @@ import urllib
 import youtube_dl
 
 
-client.basic_help(title="music", desc="Handles music functionality within the bot.")
 detailed_help = {
 	"Usage": f"{client.default_prefix}music <subcommand> [args]",
 	"Arguments": "`subcommand` - subcommand to run\n`args` - (optional) arguments specific to the subcommand being run",

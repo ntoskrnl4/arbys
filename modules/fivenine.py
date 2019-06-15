@@ -2,7 +2,6 @@ from client import client
 import discord
 import random
 
-client.basic_help(title="59", desc="Returns a picture showing 59 signal reception")
 
 fivenine = [
 	"https://cdn.discordapp.com/attachments/377206780700393473/409899331584524308/20180204_213324.jpg",
