@@ -36,8 +36,6 @@ async def help_command(command: str, message: discord.Message):
 			embed = embed.set_footer(text=datetime.datetime.utcnow().__str__())
 			await message.channel.send(embed=embed)
 
-client.basic_help("help [command]", "Get help with the bot or a certain command")
-
 help_long_help = {
 	"Usage:": f"`{client.default_prefix}help [command]`",
 	"Arguments": "`command` - (Optional) Bot command to fetch detailed help with.",
