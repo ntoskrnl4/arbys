@@ -122,7 +122,7 @@ async def command(command: str, message: discord.Message):
 		server_embed = server_embed.add_field(name="Name", value=s.name)
 		server_embed = server_embed.add_field(name="Raw ID", value=s.id)
 		icon = s.icon_url_as(format="png", size=1024)
-		if not icon:
+		if not icon:  # Used to be != "" before icon was a discord.Asset, credit to eyyyyyy/0x5c for finding/fixing this
 			icon = "[no custom icon]"
 			server_embed = server_embed.set_thumbnail(url=s.icon_url)
 		server_embed = server_embed.add_field(name="Icon URL", value=icon)
