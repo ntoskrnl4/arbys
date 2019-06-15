@@ -41,7 +41,7 @@ async def command(command: str, message: discord.Message):
 		return
 	try:
 		try:
-			u = await client.get_user_info(__common__.stripMentionsToID(parts[1]))
+			u = await client.fetch_user(__common__.stripMentionsToID(parts[1]))
 		except TypeError:
 			await message.channel.send("Invalid argument: integer ID or mentions are acceptable")
 			return
@@ -114,26 +114,26 @@ async def command(command: str, message: discord.Message):
 																	f"Web: {status_emoji(m.web_status)}\n"
 																	f"Mobile: {status_emoji(m.mobile_status)}\n"
 																	f"Is on mobile? {m.is_on_mobile()}",)
-		user_embed = user_embed.set_author(icon_url=m.avatar_url_as(format="png", size=128), name=m.display_name)
+		user_embed = user_embed.set_author(icon_url=m.avatar_url_as(format="png", size=128), name=f"{m.name}#{m.discriminator}")
 		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
 	if isServer:
-		server_embed = discord.Embed(title="Server Information", description=f"Information about the server {s.name}", color=0xb368a2)
-		server_embed = server_embed.set_thumbnail(url=s.icon_url)
+		server_embed = discord.Embed(title="Server Information", color=0xb368a2)
 		server_embed = server_embed.add_field(name="Name", value=s.name)
 		server_embed = server_embed.add_field(name="Raw ID", value=s.id)
 		icon = s.icon_url_as(format="png", size=1024)
-		if icon == "":
+		if not icon:
 			icon = "[no custom icon]"
+			server_embed = server_embed.set_thumbnail(url=s.icon_url)
 		server_embed = server_embed.add_field(name="Icon URL", value=icon)
-		server_embed = server_embed.add_field(name="Owner", value=f"{s.owner.name}#{s.owner.discriminator} ({s.owner.id})")
-		server_embed = server_embed.add_field(name="Creation Time", value=s.created_at)
+		server_embed = server_embed.add_field(name="Owner", value=f"{s.owner.name}#{s.owner.discriminator}\nID {s.owner.id}")
 		server_embed = server_embed.add_field(name="Member Count", value=s.member_count)
 		server_embed = server_embed.add_field(name="Role Count", value=len(s.roles))
 		server_embed = server_embed.add_field(name="Emoji Count", value=len(s.emojis))
+		server_embed = server_embed.add_field(name="Creation Time", value=s.created_at)
 		server_embed = server_embed.add_field(name="Region", value=s.region)
 		server_embed = server_embed.add_field(name="Is offline?", value=s.unavailable)
-		server_embed = server_embed.add_field(name="Admin 2FA required?", value=s.mfa_level)
+		server_embed = server_embed.add_field(name="Admin 2FA required?", value=bool(s.mfa_level))
 		server_embed = server_embed.add_field(name="Verification Level", value=s.verification_level)
 		server_embed = server_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
