@@ -41,7 +41,7 @@ async def readier():
 	return
 
 
-@client.command(trigger=cmd_name, aliases=["statistics"])
+@client.command(trigger=cmd_name, aliases=["statistics", "s"])
 async def statistics(command: str, message: discord.Message):
 	if "--hostname" in command:
 		include_hostname = True
