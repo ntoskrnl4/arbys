@@ -5,7 +5,6 @@ from key import token
 # To load new modules, copy/paste the line below, uncommented, with X filled in for the name of your file
 # from modules import X
 
-from modules import _debug
 from modules import about
 from modules import ares
 from modules import beef
@@ -34,6 +33,7 @@ from modules import phonehand
 from modules import ping
 from modules import pingreact
 from modules import relay
+from modules import roles
 from modules import spaceman
 from modules import stats
 from modules import thiccbeef
