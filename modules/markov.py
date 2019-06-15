@@ -164,6 +164,7 @@ async def command(parts: str, message: discord.Message):
 		response.title = f"Markov function failed"
 		response.description = "Error running markov function: Unknown object specified"
 		response.set_footer(text=f"{datetime.utcnow().__str__()} | Markov run by @{message.author.display_name}")
+		await message.channel.send(embed=response)
 
 	# run different outputs for different input types
 	if target_type == "user":
