@@ -1,4 +1,5 @@
 from client import client
+from config import shutdown_user
 from datetime import datetime
 from modules import __common__
 from socket import gethostname
@@ -13,7 +14,7 @@ import time
 
 @client.command(trigger="kill", aliases=["exit"])
 async def command(command: str, message: discord.Message):
-	if not __common__.check_permission(message.author):
+	if message.author.id != shutdown_user:
 		await message.add_reaction("❌")
 		if message.author.id == key.shutdown_easter_egg_user:
 			await message.channel.send("*hehehe*\n\nCan't fool me! >:3")
@@ -38,7 +39,7 @@ async def command(command: str, message: discord.Message):
 
 			def reaction_check(reaction, user):
 				return (reaction.message.id == m.id and
-						__common__.check_permission(user) and
+						user.id == shutdown_user and
 						reaction.emoji == "☑")
 
 			try:
