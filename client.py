@@ -14,7 +14,7 @@ import traceback
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.5.2"
+	__version__ = "0.5.2.1"
 
 	_background_tasks: List[Callable[[], None]] = []
 	_ready_handlers: List[Callable[[], None]] = []
@@ -144,7 +144,7 @@ class FrameworkClient(discord.Client):
 			except Exception as e:
 				log.warning("Ignoring exception in shutdown coroutine (see stack trace below)", include_exception=True)
 			await asyncio.sleep(0.1)
-		client._do_cleanup()
+		await client.logout()
 		sys.exit(0)
 
 	async def on_message(self, message: discord.Message):
