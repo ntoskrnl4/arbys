@@ -6,6 +6,7 @@ import config
 import datetime
 import discord
 import log
+import os
 import prefix
 import sys
 import time
@@ -13,7 +14,7 @@ import traceback
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.5.1.1"
+	__version__ = "0.5.2"
 
 	_background_tasks: List[Callable[[], None]] = []
 	_ready_handlers: List[Callable[[], None]] = []
@@ -111,15 +112,17 @@ class FrameworkClient(discord.Client):
 			log.info("Bot reconnected to Discord")
 			return
 
+		# add our own mention as a prefix
+		self.prefixes.append(f"<@{self.user.id}> ")
+		self.prefixes.append(f"<@!{self.user.id}> ")
+		if not config.no_bpid_prefix:
+			self.prefixes.append(f"bpid{os.getpid()} ")  # Add our own Bot Process ID to differentiate between instances
+
 		if self._no_boot_prefixes:
 			# we need to add our own then
 			self.default_prefix = f"<@{self.user.id}> "
-			self.prefixes.append(f"<@{self.user.id}> ")
-			self.prefixes.append(f"<@!{self.user.id}> ")
 			self.boot_playing_msg = f"@{self.user.name} help"
 		else:
-			self.prefixes.append(f"<@{self.user.id}> ")
-			self.prefixes.append(f"<@!{self.user.id}> ")
 			self.boot_playing_msg = f"{self.default_prefix}help"
 
 		for func in self._ready_handlers:
@@ -131,6 +134,7 @@ class FrameworkClient(discord.Client):
 		self.active = True
 		self._has_been_readied = True
 		log.info(f"Bot is ready to go! We are @{client.user.name}#{client.user.discriminator} (id: {client.user.id})")
+		log.info(f"Bot process ID is {os.getpid()}. If no_bpid_prefix is disabled this specific instance can be addressed with bpid{os.getpid()}.")
 
 	async def on_shutdown(self):
 		log.debug(f"entering shutdown handler, here's goodbye from on_shutdown()")
@@ -144,21 +148,21 @@ class FrameworkClient(discord.Client):
 		sys.exit(0)
 
 	async def on_message(self, message: discord.Message):
-		if not self.active:
-			return
 
 		self.message_count += 1
 
-		for func in self._message_handlers:
-			try:
-				await func(message)
-			except Exception:
-				log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
-
+		if self.active:
+			for func in self._message_handlers:
+				try:
+					await func(message)
+				except Exception:
+					log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
 		is_cmd, this_prefix = prefix.check_bot_prefix(message.content, self.prefixes)
 		if is_cmd:
 			command = message.content[len(this_prefix):]
 			known_cmd, run_by = prefix.check_command_prefix(command, list(self._command_lookup.keys()))
+			if (self.active is False) and (run_by != "_exec"):
+				return
 			if not known_cmd:
 				# unknown command branch
 				await message.channel.send(self.unknown_command)
