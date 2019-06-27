@@ -175,7 +175,11 @@ async def command(parts: str, message: discord.Message):
 			else:
 				display_target = f"{target.name}#{target.discriminator}"
 
-			count, result = await get_user_markov(target.id, message, size, charlimit, attempts)
+			try:
+				count, result = await get_user_markov(target.id, message, size, charlimit, attempts)
+			except KeyError:
+				await message.channel.send(f"{message.author.mention} The user you have specified has had no recent messages. This function only works on users who have been active recently.")
+				return
 
 			if result is None:
 				response.colour = 0xb81209
