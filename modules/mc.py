@@ -1,11 +1,12 @@
 # mc.py a command for fetching details about a minecraft server
+import discord
+import base64, io # media
+import socket, struct, datetime, json, random # server protocol
 
-from client import client 
-from six import string_types
-import discord, socket, struct, io, base64, datetime, json, random
+from client import client
 
-SERVER_URL = "mc.usu.xyz" # Port is default
-COMMAND_TRIGGER = "mc" # mc default
+SERVER_URL = "mc.usu.xyz" # Port is default 25565
+COMMAND_TRIGGER = "mc" # "mc" default
 
 # Following classes are forked/edited from Dinnerbone/mcstatus
 
@@ -248,9 +249,8 @@ class ServerPinger:
                 self.ping_token, received_token))
 
         delta = (received - sent)
-        # We have no trivial way of getting a time delta :(
-        return (delta.days * 24 * 60 * 60 + delta.seconds) * 1000 + delta.microseconds / 1000.0
 
+        return (delta.total_seconds() * 1000)
 
 class PingResponse:
     class Players:
@@ -261,13 +261,13 @@ class PingResponse:
 
                 if "name" not in raw:
                     raise ValueError("Invalid player object (no 'name' value)")
-                if not isinstance(raw["name"], string_types):
+                if not isinstance(raw["name"], str):
                     raise ValueError("Invalid player object (expected 'name' to be str, was %s)" % type(raw["name"]))
                 self.name = raw["name"]
 
                 if "id" not in raw:
                     raise ValueError("Invalid player object (no 'id' value)")
-                if not isinstance(raw["id"], string_types):
+                if not isinstance(raw["id"], str):
                     raise ValueError("Invalid player object (expected 'id' to be str, was %s)" % type(raw["id"]))
                 self.id = raw["id"]
 
@@ -301,7 +301,7 @@ class PingResponse:
 
             if "name" not in raw:
                 raise ValueError("Invalid version object (no 'name' value)")
-            if not isinstance(raw["name"], string_types):
+            if not isinstance(raw["name"], str):
                 raise ValueError("Invalid version object (expected 'name' to be str, was %s)" % type(raw["name"]))
             self.name = raw["name"]
 
@@ -380,11 +380,22 @@ class MinecraftServer:
 async def mc(ctx, message: discord.Message):
     server = MinecraftServer.lookup(SERVER_URL) # Instantiate MinecraftServer class from SERVER_URL
     status = server.status() # Get status, including icon, user count, usernames, etc
-    players = [] # Players on the server
-    description = "\n**Latency:** {}ms\n**Version:** {}\n**Players:** {}/{}".format(status.latency, status.raw["version"]["name"], status.raw["players"]["online"], status.raw["players"]["max"])
-    buffer = io.BytesIO(base64.b64decode(status.favicon.split(",")[1])) # Decode base64 icon and turn the data into a BytesIO 
 
-    embed = discord.Embed(color=0x3D69DE, title="**{}**\n{}".format(status.description["text"], SERVER_URL), description=description) # Create embed
+    players = [] # Players on the server
+
+    latency = status.latency
+    version = status.raw["version"]["name"]
+    onlineplayercount = status.raw["players"]["online"]
+    maxplayercount =  status.raw["players"]["max"]
+
+    description = f"\n**Latency:** {latency}ms\n**Version:** {version}\n**Players:** {onlineplayercount}/{maxplayercount}"
+
+    buffer = io.BytesIO(base64.b64decode(status.favicon.split(",")[1])) # Decode base64 icon and turn the data into a BytesIO
+
+    servertitle = status.description["text"]
+    serverurl = SERVER_URL
+
+    embed = discord.Embed(color=0x3D69DE, title=f"**{servertitle}**\n{serverurl}", description=description) # Create embed
     embed.set_thumbnail(url="attachment://icon.png")
 
     if status.raw["players"]["online"] > 0: # If players are online create players field
