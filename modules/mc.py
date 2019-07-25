@@ -1,14 +1,24 @@
 # mc.py a command for fetching details about a minecraft server
-import discord
-import base64, io # media
-import socket, struct, datetime, json, random # server protocol
 
 from client import client
 
-SERVER_URL = "mc.usu.xyz" # Port is default 25565
-COMMAND_TRIGGER = "mc" # "mc" default
+import asyncio
+import base64
+import datetime
+import discord
+import io
+import json
+import log
+import random
+import socket
+import struct
+
+
+SERVER_URL = "mc.usu.xyz"  # Port is default 25565
+COMMAND_TRIGGER = "mc"  # "mc" default
 
 # Following classes are forked/edited from Dinnerbone/mcstatus
+
 
 class Connection:
     def __init__(self):
@@ -130,6 +140,7 @@ class Connection:
         self.write_varint(len(data))
         self.write(data)
 
+
 class TCPSocketConnection(Connection):
     def __init__(self, addr, timeout=3):
         Connection.__init__(self)
@@ -160,7 +171,9 @@ class TCPSocketConnection(Connection):
         try:
             self.socket.close()
         except:
+            log.warning("Could not close socket for unknown reason", include_exception=True)
             pass
+
 
 class UDPSocketConnection(Connection):
     def __init__(self, addr, timeout=3):
@@ -193,7 +206,9 @@ class UDPSocketConnection(Connection):
         try:
             self.socket.close()
         except:
+            log.warning("Could not close socket for unknown reason", include_exception=True)
             pass
+
 
 class ServerPinger:
     def __init__(self, connection, host="", port=0, version=47, ping_token=None):
@@ -252,6 +267,7 @@ class ServerPinger:
 
         return (delta.total_seconds() * 1000)
 
+
 class PingResponse:
     class Players:
         class Player:
@@ -290,7 +306,7 @@ class PingResponse:
             if "sample" in raw:
                 if type(raw["sample"]) is not list:
                     raise ValueError("Invalid players object (expected 'sample' to be list, was %s)" % type(raw["max"]))
-                self.sample = [PingResponse.Players.Player(p) for p in raw["sample"]]
+                self.sample = [self.Player(p) for p in raw["sample"]]
             else:
                 self.sample = None
 
@@ -316,11 +332,11 @@ class PingResponse:
 
         if "players" not in raw:
             raise ValueError("Invalid status object (no 'players' value)")
-        self.players = PingResponse.Players(raw["players"])
+        self.players = self.Players(raw["players"])
 
         if "version" not in raw:
             raise ValueError("Invalid status object (no 'version' value)")
-        self.version = PingResponse.Version(raw["version"])
+        self.version = self.Version(raw["version"])
 
         if "description" not in raw:
             raise ValueError("Invalid status object (no 'description' value)")
@@ -332,6 +348,7 @@ class PingResponse:
             self.favicon = None
 
         self.latency = None
+
 
 class MinecraftServer:
     def __init__(self, host, port=25565):
@@ -350,14 +367,6 @@ class MinecraftServer:
             port = int(parts[1])
         if port is None:
             port = 25565
-            try:
-                answers = dns.resolver.query("_minecraft._tcp." + host, "SRV")
-                if len(answers):
-                    answer = answers[0]
-                    host = str(answer.target).rstrip(".")
-                    port = int(answer.port)
-            except Exception:
-                pass
 
         return MinecraftServer(host, port)
 
@@ -373,35 +382,39 @@ class MinecraftServer:
                 return result
             except Exception as e:
                 exception = e
+            finally:
+                asyncio.sleep(2)  # Sleep between tries since the attempt blocks for 3 seconds
         else:
             raise exception
 
 @client.command(trigger=COMMAND_TRIGGER)
-async def mc(ctx, message: discord.Message):
-    server = MinecraftServer.lookup(SERVER_URL) # Instantiate MinecraftServer class from SERVER_URL
-    status = server.status() # Get status, including icon, user count, usernames, etc
+async def mc(command: str, message: discord.Message):
+    server = MinecraftServer.lookup(SERVER_URL)  # Instantiate MinecraftServer class from SERVER_URL
+    status = server.status()  # Get status, including icon, user count, usernames, etc
 
-    players = [] # Players on the server
+    players = []  # Players on the server
 
     latency = status.latency
     version = status.raw["version"]["name"]
     onlineplayercount = status.raw["players"]["online"]
-    maxplayercount =  status.raw["players"]["max"]
+    maxplayercount = status.raw["players"]["max"]
 
-    description = f"\n**Latency:** {latency}ms\n**Version:** {version}\n**Players:** {onlineplayercount}/{maxplayercount}"
+    description = f"\n**Latency:** {latency}ms" \
+                f"\n**Version:** {version}" \
+                f"\n**Players:** {onlineplayercount}/{maxplayercount}"
 
-    buffer = io.BytesIO(base64.b64decode(status.favicon.split(",")[1])) # Decode base64 icon and turn the data into a BytesIO
+    buffer = io.BytesIO(base64.b64decode(status.favicon.split(",")[1]))  # Decode base64 icon and turn the data into a BytesIO
 
     servertitle = status.description["text"]
     serverurl = SERVER_URL
 
-    embed = discord.Embed(color=0x3D69DE, title=f"**{servertitle}**\n{serverurl}", description=description) # Create embed
+    embed = discord.Embed(color=0x3D69DE, title=f"**{servertitle}**\n{serverurl}", description=description)
     embed.set_thumbnail(url="attachment://icon.png")
 
-    if status.raw["players"]["online"] > 0: # If players are online create players field
+    if status.raw["players"]["online"] > 0:  # If players are online create players field
         for player in status.raw["players"]["sample"]:
             players.append(player["name"])
         embed.add_field(name="Players", value="\n".join(players))
     
     file = discord.File(fp=buffer, filename="icon.png")
-    await message.channel.send(file=file, embed=embed) # Send embed
+    await message.channel.send(file=file, embed=embed)  # Send embed
