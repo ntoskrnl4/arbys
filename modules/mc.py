@@ -388,33 +388,32 @@ class MinecraftServer:
             raise exception
 
 @client.command(trigger=COMMAND_TRIGGER)
-async def mc(command: str, message: discord.Message):
-    server = MinecraftServer.lookup(SERVER_URL)  # Instantiate MinecraftServer class from SERVER_URL
-    status = server.status()  # Get status, including icon, user count, usernames, etc
+async def mc(ctx, message: discord.Message):
+    async with message.channel.typing():
+        server = MinecraftServer.lookup(SERVER_URL) # Instantiate MinecraftServer class from SERVER_URL
+        status = server.status() # Get status, including icon, user count, usernames, etc
 
-    players = []  # Players on the server
+        players = [] # Players on the server
 
-    latency = status.latency
-    version = status.raw["version"]["name"]
-    onlineplayercount = status.raw["players"]["online"]
-    maxplayercount = status.raw["players"]["max"]
+        latency = int(status.latency)
+        version = status.raw["version"]["name"]
+        onlineplayercount = status.raw["players"]["online"]
+        maxplayercount =  status.raw["players"]["max"]
 
-    description = f"\n**Latency:** {latency}ms" \
-                f"\n**Version:** {version}" \
-                f"\n**Players:** {onlineplayercount}/{maxplayercount}"
+        description = f"\n**Latency:** {latency}ms\n**Version:** {version}\n**Players:** {onlineplayercount}/{maxplayercount}"
 
-    buffer = io.BytesIO(base64.b64decode(status.favicon.split(",")[1]))  # Decode base64 icon and turn the data into a BytesIO
+        buffer = io.BytesIO(base64.b64decode(status.favicon.split(",")[1])) # Decode base64 icon and turn the data into a BytesIO
 
-    servertitle = status.description["text"]
-    serverurl = SERVER_URL
+        servertitle = status.description["text"]
+        serverurl = SERVER_URL
 
-    embed = discord.Embed(color=0x3D69DE, title=f"**{servertitle}**\n{serverurl}", description=description)
-    embed.set_thumbnail(url="attachment://icon.png")
+        embed = discord.Embed(color=0x3D69DE, title=f"**{servertitle}**\n{serverurl}", description=description) # Create embed
+        embed.set_thumbnail(url="attachment://icon.png")
 
-    if status.raw["players"]["online"] > 0:  # If players are online create players field
-        for player in status.raw["players"]["sample"]:
-            players.append(player["name"])
-        embed.add_field(name="Players", value="\n".join(players))
-    
-    file = discord.File(fp=buffer, filename="icon.png")
-    await message.channel.send(file=file, embed=embed)  # Send embed
+        if status.raw["players"]["online"] > 0: # If players are online create players field
+            for player in status.raw["players"]["sample"]:
+                players.append(player["name"])
+            embed.add_field(name="Players", value="\n".join(players))
+        
+        file = discord.File(fp=buffer, filename="icon.png")
+    await message.channel.send(file=file, embed=embed) # Send embed
