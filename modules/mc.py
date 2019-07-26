@@ -383,7 +383,7 @@ async def mc(ctx, message: discord.Message):
 
     players = [] # Players on the server
 
-    latency = status.latency
+    latency = round(status.latency, 2)
     version = status.raw["version"]["name"]
     onlineplayercount = status.raw["players"]["online"]
     maxplayercount =  status.raw["players"]["max"]
