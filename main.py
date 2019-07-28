@@ -23,7 +23,7 @@ from modules import info
 from modules import join_leave_msgs
 from modules import logstat
 from modules import markov
-from modules import mc
+# from modules import mc  # Disabled due to spam
 from modules import message_log
 from modules import morse
 from modules import music
