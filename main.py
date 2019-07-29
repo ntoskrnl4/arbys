@@ -6,8 +6,9 @@ from key import token
 # from modules import X
 
 from modules import about
+from modules import antispambot
 from modules import ares
-from modules import beef
+# from modules import beef
 from modules import call
 # from modules import chicken
 from modules import cond
@@ -45,5 +46,6 @@ from modules import thiccom
 from modules import units
 from modules import unmorse
 from modules import uwu
+from modules import wwv
 
 client.run(token)
