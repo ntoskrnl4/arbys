@@ -381,9 +381,7 @@ class MinecraftServer:
                 result.latency = pinger.test_ping()
                 return result
             except Exception as e:
-                exception = e
-            finally:
-                asyncio.sleep(2)  # Sleep between tries since the attempt blocks for 3 seconds
+                pass
         else:
             raise exception
 
