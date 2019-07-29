@@ -15,16 +15,14 @@ else:
 	has_psutil = True
 
 
-cmd_name = "stats"
-
-client.basic_help(title=cmd_name, desc=f"shows various running statistics of {client.bot_name}")
+client.basic_help(title="stats", desc=f"shows various running statistics of {client.bot_name}")
 
 detailed_help = {
-	"Usage": f"{client.default_prefix}{cmd_name}",
+	"Usage": f"{client.default_prefix}stats",
 	"Description": f"This command shows different available statistics of {client.bot_name}, including servers, uptime, and commands run.",
-	"Related": f"`{client.default_prefix} info` - shows information about {client.bot_name}",
+	"Related": f"`{client.default_prefix}info` - shows information about {client.bot_name}",
 }
-client.long_help(cmd=cmd_name, mapping=detailed_help)
+client.long_help(cmd="stats", mapping=detailed_help)
 
 
 @client.ready
@@ -41,7 +39,7 @@ async def readier():
 	return
 
 
-@client.command(trigger=cmd_name, aliases=["statistics", "s"])
+@client.command(trigger="stats", aliases=["statistics", "s"])
 async def statistics(command: str, message: discord.Message):
 	if "--hostname" in command:
 		include_hostname = True
