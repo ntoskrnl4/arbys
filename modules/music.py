@@ -144,7 +144,7 @@ class Song:
 
 async def confirm(message, fallback: str = None) -> bool:
 	try:
-		await message.add_reaction("")
+		await message.add_reaction("☑")
 	except discord.errors.Forbidden:
 		pass
 	else:
@@ -277,7 +277,7 @@ def get_queue_list(queue, length=20):
 async def command(command: str, message: discord.Message):
 	global guild_channel, guild_now_playing_song, guild_queue, guild_volume, active_clients, access_lock
 
-	if message.guild.id == 364480908528451584:
+	if message.guild.id == 364480908528451584 and (message.channel.id != 473570993072504832):
 		await message.channel.send(client.unknown_command)
 		return
 
