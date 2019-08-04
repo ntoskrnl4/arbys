@@ -20,14 +20,14 @@ detailed_help = {
 client.long_help(cmd=cmd_name, mapping=detailed_help)
 
 forbidden_channels = [
-
+	473570993072504832
 ]
 
 
 async def get_user_markov(user: int, message: discord.Message, size: int, charlimit: int, attempts: int) -> Tuple[int, str]:
 	input_messages = [x for x in client._connection._messages if x.author.id == user]
 	await asyncio.sleep(0.1)
-	input_messages = [x for x in input_messages if x.guild.id != message.guild]
+	input_messages = [x for x in input_messages if getattr(x.guild,'id',-1) == message.guild.id]
 	await asyncio.sleep(0.1)
 	input_messages = [x for x in input_messages if x.channel.id not in forbidden_channels]
 	await asyncio.sleep(0.1)
