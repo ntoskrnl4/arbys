@@ -4,6 +4,8 @@ import discord
 
 @client.message()
 async def hunter_irl(message: discord.Message):
+	if message.guild is None:
+		return
 	if (message.guild.id == 364480908528451584) and ("uwu" in message.content.lower().replace(" ", "")):
 		try:
 			await message.add_reaction(discord.utils.find(lambda x: x.id == 473524356270522369, message.guild.emojis))
@@ -12,6 +14,8 @@ async def hunter_irl(message: discord.Message):
 
 @client.message()
 async def ntoskrnl_irl(message: discord.Message):
+	if message.guild is None:
+		return
 	if (message.guild.id == 364480908528451584) and "<:ntoskrnl_irl:486325601750351882>" in message.content:
 		try:
 			await message.add_reaction(discord.utils.find(lambda x: x.id == 486325601750351882, message.guild.emojis))
