@@ -2,11 +2,13 @@ from client import client
 from datetime import datetime
 
 import discord
+import log
 import os
 import socket
 import threading
 import time
 
+# Some optional things
 try:
 	import psutil
 except ModuleNotFoundError:
@@ -14,6 +16,17 @@ except ModuleNotFoundError:
 else:
 	has_psutil = True
 
+try:
+	import pijuice
+except ModuleNotFoundError:
+	has_pijuice = False
+except Exception as e:
+	log.warn("Unexpected exception trying to import module pijuice", include_exception=True)
+	has_pijuice = False
+else:
+	has_pijuice = True
+	_iface = pijuice.PiJuiceInterface()  # Create the interface that we'll create the battery object with
+	battery = pijuice.PiJuiceStatus(_iface)
 
 client.basic_help(title="stats", desc=f"shows various running statistics of {client.bot_name}")
 
@@ -39,19 +52,53 @@ async def readier():
 	return
 
 
-@client.command(trigger="stats", aliases=["statistics", "s"])
+@client.command(trigger="stats", aliases=["statistics", "s", "status"])
 async def statistics(command: str, message: discord.Message):
-	if "--hostname" in command:
-		include_hostname = True
-	else:
-		include_hostname = False
-
 	if "--uptime" in command:
 		up = time.perf_counter() - client.first_execution
 		await message.channel.send(f"Uptime:\n`{up:.3f}` seconds\n`{up/86400:.4f}` days")
 		return
 
 	async with message.channel.typing():
+
+		embed = discord.Embed(title=f"Running statistics for {client.bot_name}", description=discord.Embed.Empty, color=0x404040)
+
+		up = time.perf_counter() - client.first_execution
+		embed = embed.add_field(name="Uptime", value=f"{up:.3f} seconds\n{up/86400:.4f} days")
+		embed = embed.add_field(name="Servers", value=len(client.guilds))
+		embed = embed.add_field(name="Commands since boot", value=client.command_count)
+		embed = embed.add_field(name="Messages since boot", value=client.message_count)
+		n_connected = len(client.voice_clients)
+		n_playing = len([x for x in client.voice_clients if x.is_playing()])
+		embed = embed.add_field(name="Connected voice chats", value=f"{n_connected} ({n_playing} playing)")
+		embed = embed.add_field(name="Bot Process ID", value=os.getpid())
+		embed = embed.add_field(name="Host Machine Name", value=socket.gethostname())
+
+		if has_pijuice:
+			result = battery.GetChargeLevel()
+			if result["error"] == "NO_ERROR":
+				charge_level = f"{result['data']}%"
+			else:
+				charge_level = f"Error"
+
+			result = battery.GetBatteryVoltage()
+			if result["error"] == "NO_ERROR":
+				charge_voltage = f"{result['data']/1000}v"
+			else:
+				charge_voltage = "Voltage unknown"
+
+			battery_text = f"{charge_level} ({charge_voltage})\n"
+
+			result = battery.GetStatus()
+			if result['error'] == "NO_ERROR":
+				if "CHARGING" in result['data']['battery']:
+					battery_text += "Connected to mains"
+				else:
+					battery_text += "Running off battery"
+			else:
+				battery_text += "Unable to get status"
+
+			embed = embed.add_field(name="Battery status", value=battery_text)
 
 		if has_psutil:
 			try:
@@ -72,25 +119,11 @@ async def statistics(command: str, message: discord.Message):
 				cpu_text += f"**CPU {index}:** {v}%\n"
 				index += 1
 
-		embed = discord.Embed(title=f"{client.bot_name} stats", description=discord.Embed.Empty, color=0x404040)
-		up = time.perf_counter() - client.first_execution
-		embed = embed.add_field(name="Uptime", value=f"{up:.3f} seconds\n{up/86400:.4f} days")
-		embed = embed.add_field(name="Servers", value=len(client.guilds))
-		embed = embed.add_field(name="Total commands run in all servers since last reboot", value=client.command_count, inline=False)
-		mps = client.message_count / up
-		msg_freq = up / client.message_count
-		embed = embed.add_field(name="Total messages sent in all servers since last reboot", value=f"{client.message_count} ({mps:.4f}/sec) ({msg_freq:.4f} sec/message)", inline=False)
-		n_connected = len(client.voice_clients)
-		n_playing = len([x for x in client.voice_clients if x.is_playing()])
-		embed = embed.add_field(name="Connected voice chats", value=f"{n_connected} ({n_playing} playing)")
-		embed = embed.add_field(name="Bot Process ID", value=os.getpid())
-		if include_hostname: embed = embed.add_field(name="Host Machine Name", value=socket.gethostname())
-		if has_psutil:
-			embed = embed.add_field(name="Host CPU temperature", value=f"{int(temp) if temp is not None else 'Unknown'}")
-			embed = embed.add_field(name="Process Memory Usage", value=f"{self_m_used/(1024*1024):.3f} MiB")
-			embed = embed.add_field(name="Process CPU Usage (relative to one core)", value=f"{cpu_self:.1f}%")
+			embed = embed.add_field(name="Host CPU temp", value=f"{int(temp) if temp is not None else 'Unknown'}°C")
+			embed = embed.add_field(name="Process Memory", value=f"{self_m_used/(1024*1024):.3f} MiB")
+			embed = embed.add_field(name="Process CPU", value=f"{cpu_self:.1f}%")
 			embed = embed.add_field(name="System RAM Usage", value=f"{m_used/(1024*1024):.1f}/{m_total/(1024*1024):.1f} MiB ({(m_used/m_total)*100:.2f}%)")
-			embed = embed.add_field(name="System CPU Usage", value=cpu_text, inline=False)
+			embed = embed.add_field(name="System CPU", value=cpu_text, inline=False)
 
 		embed = embed.set_footer(text=datetime.utcnow().__str__())
 	await message.channel.send(embed=embed)
