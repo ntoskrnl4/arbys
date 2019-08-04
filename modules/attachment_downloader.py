@@ -25,5 +25,5 @@ async def download_attachments(message: discord.Message):
 async def clear_old_files():
 	files = os.listdir("attachments/")
 	for file in files:
-		if (time.time() - os.path.getctime("attachments/"+file))+800000000 > (90*86400):
+		if (time.time() - os.path.getctime("attachments/"+file)) > (7*86400):
 			os.remove(f"attachments/{file}")
