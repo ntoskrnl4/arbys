@@ -48,7 +48,7 @@ async def get_human_id(id, message) -> str:
 	if m is not None:
 		return f"@{m.name} ({m.display_name if m.display_name != m.name else ''})"
 	else:
-		m = await client.get_user_info(id)
+		m = await client.fetch_user_info(id)
 		return f"@{m.name}#{m.discriminator}"
 
 

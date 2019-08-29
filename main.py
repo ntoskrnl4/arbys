@@ -8,6 +8,7 @@ from key import token
 from modules import about
 from modules import antispambot
 from modules import ares
+from modules import attachment_downloader
 # from modules import beef
 from modules import call
 # from modules import chicken
@@ -22,10 +23,12 @@ from modules import help
 from modules import htm
 from modules import info
 from modules import join_leave_msgs
+from modules import livepatch
 from modules import logstat
 from modules import markov
 from modules import mc
 from modules import message_log
+from modules import modtools
 # from modules import morse
 from modules import music
 from modules import n2yo
