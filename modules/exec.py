@@ -42,6 +42,6 @@ async def command(command: str, message: discord.Message):
 			exec(f"{parts[1]} = {parts[2]}", locals(), globals())
 			exec(f"global {parts[1]}")
 			await message.channel.send(f"Updated `{parts[1]}`: `{eval(parts[1])}`")
-			await message.add_reaction("✅")
+			await message.add_reaction("☑")
 			return
 	return

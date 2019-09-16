@@ -8,25 +8,13 @@ import socket
 import threading
 import time
 
-# Some optional things
+
 try:
 	import psutil
 except ModuleNotFoundError:
 	has_psutil = False
 else:
 	has_psutil = True
-
-try:
-	import pijuice
-except ModuleNotFoundError:
-	has_pijuice = False
-except Exception as e:
-	log.warn("Unexpected exception trying to import module pijuice", include_exception=True)
-	has_pijuice = False
-else:
-	has_pijuice = True
-	_iface = pijuice.PiJuiceInterface()  # Create the interface that we'll create the battery object with
-	battery = pijuice.PiJuiceStatus(_iface)
 
 client.basic_help(title="stats", desc=f"shows various running statistics of {client.bot_name}")
 
@@ -68,37 +56,12 @@ async def statistics(command: str, message: discord.Message):
 		embed = embed.add_field(name="Servers", value=len(client.guilds))
 		embed = embed.add_field(name="Commands since boot", value=client.command_count)
 		embed = embed.add_field(name="Messages since boot", value=client.message_count)
+		embed = embed.add_field(name="Messages in cache", value=len(client._connection._messages))
 		n_connected = len(client.voice_clients)
 		n_playing = len([x for x in client.voice_clients if x.is_playing()])
 		embed = embed.add_field(name="Connected voice chats", value=f"{n_connected} ({n_playing} playing)")
 		embed = embed.add_field(name="Bot Process ID", value=os.getpid())
 		embed = embed.add_field(name="Host Machine Name", value=socket.gethostname())
-
-		if has_pijuice:
-			result = battery.GetChargeLevel()
-			if result["error"] == "NO_ERROR":
-				charge_level = f"{result['data']}%"
-			else:
-				charge_level = f"Error"
-
-			result = battery.GetBatteryVoltage()
-			if result["error"] == "NO_ERROR":
-				charge_voltage = f"{result['data']/1000}v"
-			else:
-				charge_voltage = "Voltage unknown"
-
-			battery_text = f"{charge_level} ({charge_voltage})\n"
-
-			result = battery.GetStatus()
-			if result['error'] == "NO_ERROR":
-				if "CHARGING" in result['data']['battery']:
-					battery_text += "Connected to mains"
-				else:
-					battery_text += "Running off battery"
-			else:
-				battery_text += "Unable to get status"
-
-			embed = embed.add_field(name="Battery status", value=battery_text)
 
 		if has_psutil:
 			try:
@@ -123,7 +86,32 @@ async def statistics(command: str, message: discord.Message):
 			embed = embed.add_field(name="Process Memory", value=f"{self_m_used/(1024*1024):.3f} MiB")
 			embed = embed.add_field(name="Process CPU", value=f"{cpu_self:.1f}%")
 			embed = embed.add_field(name="System RAM Usage", value=f"{m_used/(1024*1024):.1f}/{m_total/(1024*1024):.1f} MiB ({(m_used/m_total)*100:.2f}%)")
-			embed = embed.add_field(name="System CPU", value=cpu_text, inline=False)
+			embed = embed.add_field(name="System CPU", value=cpu_text)
+		
+		if client.__version__ == "0.7.0":
+			# todo: v0.7 - update references
+			raise RuntimeError("TODO: Update references")
+		
+		bg_count = len(client._background_tasks)
+		cmd_count = len(set(client._command_lookup.values()))
+		ready_count = len(client._ready_handlers)
+		shutdown_count = len(client._shutdown_handlers)
+		msg_count = len(client._message_handlers)
+		mj_count = len(client._member_join_handlers)
+		ml_count = len(client._member_remove_handlers)
+		readd_count = len(client._reaction_add_handlers)
+		redel_count = len(client._reaction_remove_handlers)
+		
+		embed = embed.add_field(name="Registered Event Handlers",
+								value=f"Registered commands: {cmd_count}\n"
+									f"Background tasks: {bg_count}\n"
+									f"Ready handlers: {ready_count}\n"
+									f"Shutdown handlers: {shutdown_count}\n"
+									f"Message handlers: {msg_count}\n"
+									f"Member join handlers: {mj_count}\n"
+									f"Member leave handlers: {ml_count}\n"
+									f"Reaction add handlers: {readd_count}\n"
+									f"Reaction remove handlers: {redel_count}\n")
 
 		embed = embed.set_footer(text=datetime.utcnow().__str__())
 	await message.channel.send(embed=embed)

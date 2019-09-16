@@ -14,7 +14,7 @@ import traceback
 
 
 class FrameworkClient(discord.Client):
-	__version__ = "0.5.2.1"
+	__version__ = "0.6"
 
 	_background_tasks: List[Callable[[], None]] = []
 	_ready_handlers: List[Callable[[], None]] = []
@@ -136,33 +136,48 @@ class FrameworkClient(discord.Client):
 		log.info(f"Bot is ready to go! We are @{client.user.name}#{client.user.discriminator} (id: {client.user.id})")
 		log.info(f"Bot process ID is {os.getpid()}. If no_bpid_prefix is disabled this specific instance can be addressed with bpid{os.getpid()}.")
 
-	async def on_shutdown(self):
-		log.debug(f"entering shutdown handler, here's goodbye from on_shutdown()")
+	async def do_shutdown(self):
+		log.debug(f"entering shutdown handler, here's goodbye from do_shutdown()")
 		for func in self._shutdown_handlers:
 			try:
 				await func()
 			except Exception as e:
 				log.warning("Ignoring exception in shutdown coroutine (see stack trace below)", include_exception=True)
 			await asyncio.sleep(0.1)
-		await client.logout()
+
+		log.info("Shutdown: All handlers run, now exiting from Discord")
+		self.active = False
+
+		# We have to set our status to offline since we're shutting down, and there's no proper, graceful way to shutdown
+		# because..asyncio, so we're just going to set ourselves to offline, then stop the running loop
+		await asyncio.ensure_future(client.change_presence(status=discord.Status.offline))
+		await asyncio.sleep(0.5)
+
+		# Cancel any pending tasks. This should make this better
+		tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+		log.info("Shutdown: Cancelling pending tasks")
+		[t.cancel() for t in tasks]
+		log.info("Shutdown: Closing event loop. This may take a moment...")
+		asyncio.get_running_loop().stop()
+
+		log.info("Shutdown complete; exiting")
 		sys.exit(0)
 
 	async def on_message(self, message: discord.Message):
 
 		self.message_count += 1
+		if not self.active:
+			return  # An external interface like the server can reenable this. (young-amateurs-rc/arbys modules/server.py)
 
-		if self.active:
-			for func in self._message_handlers:
-				try:
-					await func(message)
-				except Exception:
-					log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
+		for func in self._message_handlers:
+			try:
+				await func(message)
+			except Exception:
+				log.warning("Ignoring exception in message coroutine (see stack trace below)", include_exception=True)
 		is_cmd, this_prefix = prefix.check_bot_prefix(message.content, self.prefixes)
 		if is_cmd:
 			command = message.content[len(this_prefix):]
 			known_cmd, run_by = prefix.check_command_prefix(command, list(self._command_lookup.keys()))
-			if (self.active is False) and (run_by != "_exec"):
-				return
 			if not known_cmd:
 				# unknown command branch
 				await message.channel.send(self.unknown_command)
@@ -266,7 +281,7 @@ class FrameworkClient(discord.Client):
 		log.debug(f"registered new member_remove handler {func.__name__}()")
 		return func
 
-	def message(self, receive_self: bool = True):
+	def message(self, receive_self: bool = False):
 		def inner_decorator(func: Callable[[discord.Message], None]):
 			async def wrapped_handler(message: discord.Message):
 				if not receive_self and message.author.id == client.user.id:

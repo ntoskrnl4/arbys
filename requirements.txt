@@ -1,0 +1,7 @@
+psutil>=5.4.0
+youtube_dl
+markovify>=0.7.0
+matplotlib>=3.1.0
+requests>=2.22.0
+discord.py>=1.2.0
+discord
