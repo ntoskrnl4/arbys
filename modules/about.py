@@ -21,11 +21,11 @@ async def return_bot_info(command: str, message: discord.Message):
 	owner = await client.fetch_user(288438228959363073)
 
 	python_version = f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-	if sys.version_info == "alpha":
+	if sys.version_info[3] == "alpha":
 		python_version += f"a{sys.version_info.serial}"
-	if sys.version_info == "beta":
+	if sys.version_info[3] == "beta":
 		python_version += f"b{sys.version_info.serial}"
-	if sys.version_info == "candidate":
+	if sys.version_info[3] == "candidate":
 		python_version += f"rc{sys.version_info.serial}"
 
 	embed = discord.Embed(title=f"{client.bot_name} info", description=discord.Embed.Empty, color=0x404040)
