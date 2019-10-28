@@ -18,6 +18,8 @@ async def command(command: str, message: discord.Message):
 		await message.add_reaction("❌")
 		if message.author.id == key.shutdown_easter_egg_user:
 			await message.channel.send("*hehehe*\n\nCan't fool me! >:3")
+		if message.author.id == 269154594863579138:
+			await message.channel.send("no u")
 		return
 	else:
 		parts = command.split(" ")
@@ -58,5 +60,5 @@ async def command(command: str, message: discord.Message):
 				await message.channel.send(f"Uptime: { time.perf_counter() - client.first_execution:.3f} seconds ({(time.perf_counter() - client.first_execution) / 86400:.3f} days)")
 				await asyncio.sleep(0.1)  # give the above a chance to do its thing
 				log.info(f"Bot shutdown initiated at {datetime.utcnow().__str__()} by {message.author.name}#{message.author.discriminator}")
-				await client.on_shutdown()
+				await client.do_shutdown()
 	return
