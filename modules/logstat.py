@@ -48,7 +48,10 @@ async def get_human_id(id, message) -> str:
 	if m is not None:
 		return f"@{m.name} ({m.display_name if m.display_name != m.name else ''})"
 	else:
-		m = await client.fetch_user_info(id)
+		try:
+			m = await client.fetch_user(id)
+		except discord.errors.NotFound:
+			return f"Deleted User ({id})"
 		return f"@{m.name}#{m.discriminator}"
 
 
@@ -133,7 +136,7 @@ async def logstat(command: str, message: discord.Message):
 			for f in logfiles:
 				with open("logs/"+f, "r", encoding="utf-8") as file:
 					all_log_lines.extend(file.readlines())
-					await asyncio.sleep(0.1)
+					await asyncio.sleep(0.05)
 		else:
 			target_guild = 364480908528451584
 			logfiles = [x for x in os.listdir("logstat_control_logs/")]  # list of all log files
