@@ -1,15 +1,17 @@
 from client import client
 import discord
+import log
 
 
 @client.message()
 async def hunter_irl(message: discord.Message):
 	if message.guild is None:
 		return
-	if (message.guild.id == 364480908528451584) and ("uwu" in message.content.lower().replace(" ", "")):
+	if (message.guild.id in [364480908528451584, 452274699641159683]) and ("uwu" in message.content.lower().replace(" ", "")):
 		try:
 			await message.add_reaction(discord.utils.find(lambda x: x.id == 473524356270522369, message.guild.emojis))
 		except:  # thats ok, this is only a fun little joke
+			log.warning("Could not uwu: ")
 			pass
 
 @client.message()
