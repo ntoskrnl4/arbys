@@ -41,7 +41,7 @@ async def command(command: str, message: discord.Message):
 		return
 	try:
 		try:
-			u = await client.fetch_user(__common__.stripMentionsToID(parts[1]))
+			u = await client.fetch_user(__common__.strip_to_id(parts[1]))
 		except TypeError:
 			await message.channel.send("Invalid argument: integer ID or mentions are acceptable")
 			return
@@ -50,13 +50,13 @@ async def command(command: str, message: discord.Message):
 		else:
 			isUser = True
 
-		s = client.get_guild(__common__.stripMentionsToID(parts[1]))
+		s = client.get_guild(__common__.strip_to_id(parts[1]))
 		if s is None:
 			isServer = False
 		else:
 			isServer = True
 
-		c = client.get_channel(__common__.stripMentionsToID(parts[1]))
+		c = client.get_channel(__common__.strip_to_id(parts[1]))
 		if c is None:
 			isTextChannel = False
 			isVoiceChannel = False

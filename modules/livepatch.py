@@ -1,6 +1,7 @@
 """Module to assist livepatching in new or updated modules."""
 
 from client import client
+from modules import __common__
 
 import discord
 import importlib
@@ -39,7 +40,7 @@ async def display_commands(command: str, message: discord.Message):
 @client.command(trigger="livepatch", aliases=["lp"])
 async def main(command: str, message: discord.Message):
 	if message.author.id not in permissible_users:
-		await message.add_reaction("❌")
+		await __common__.failure(message)
 		return
 
 	parts = command.split(" ")
@@ -60,7 +61,7 @@ async def main(command: str, message: discord.Message):
 		importlib.invalidate_caches()
 		importlib.reload(modules)
 		exec(f"modules.{parts[2]} = importlib.import_module('modules.{parts[2]}')")
-		await message.add_reaction("☑")
+		await __common__.confirm(message)
 		return
 
 	if parts[1] == "reload":
@@ -70,7 +71,7 @@ async def main(command: str, message: discord.Message):
 		importlib.invalidate_caches()
 		importlib.reload(modules)
 		importlib.reload(eval("modules." + parts[2]))
-		await message.add_reaction("☑")
+		await __common__.confirm(message)
 		return
 	
 	if parts[1] == "unload":
@@ -102,5 +103,5 @@ async def main(command: str, message: discord.Message):
 		# todo: remove basic/long help when a module is removed. Currently it
 		#  doesn't have any attributes defining what it's from. This could also
 		#  be a feature to add for the help itself (what module it's from)
-		await message.add_reaction("☑")
+		await __common__.confirm(message)
 		return

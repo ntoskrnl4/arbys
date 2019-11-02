@@ -15,8 +15,8 @@ import time
 @client.command(trigger="kill", aliases=["exit"])
 async def command(command: str, message: discord.Message):
 	if message.author.id != shutdown_user:
-		await message.add_reaction("❌")
-		if message.author.id == key.shutdown_easter_egg_user:
+		await __common__.failure(message)
+		if message.author.id == 195582200270290944:
 			await message.channel.send("*hehehe*\n\nCan't fool me! >:3")
 		if message.author.id == 269154594863579138:
 			await message.channel.send("no u")
@@ -37,7 +37,7 @@ async def command(command: str, message: discord.Message):
 										f"Hostname: {gethostname()}\n"
 										f"Uptime: {uptime/86400:.4f} days\n"
 										f"To confirm shutdown, react to this message with ☑ in 30 seconds")
-			await m.add_reaction("☑")
+			await __common__.confirm(m)
 
 			def reaction_check(reaction, user):
 				return (reaction.message.id == m.id and
@@ -47,15 +47,15 @@ async def command(command: str, message: discord.Message):
 			try:
 				await client.wait_for("reaction_add", check=reaction_check, timeout=30)
 			except asyncio.TimeoutError:
-				await m.add_reaction("❌")
+				await __common__.failure(m)
 				await m.remove_reaction("☑", m.guild.me)
-				await message.add_reaction("❌")
+				await __common__.failure(message)
 				await m.edit(content=m.content.replace("To confirm shutdown, react to this message with ☑ in 30 seconds", "Shutdown timed out. Deleting this message in 30 seconds."), delete_after=30)
 				return
 			else:
 				client.active = False
 				await m.delete()
-				await message.add_reaction("☑")
+				await __common__.confirm(message)
 				await message.channel.send("Shutting down bot...")
 				await message.channel.send(f"Uptime: { time.perf_counter() - client.first_execution:.3f} seconds ({(time.perf_counter() - client.first_execution) / 86400:.3f} days)")
 				await asyncio.sleep(0.1)  # give the above a chance to do its thing

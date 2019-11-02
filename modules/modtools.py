@@ -42,7 +42,7 @@ async def lock(command: str, message: discord.Message):
 	else:
 		if 639519325287350272 not in [x.id for x in message.author.roles]:
 			# user is not a mod
-			await message.add_reaction("❌")
+			await __common__.failure(message)
 			return
 
 	parts = command.split(" ")
@@ -60,7 +60,7 @@ async def lock(command: str, message: discord.Message):
 		target = message.guild.get_channel(parts[1][2:-1])
 	if (target.id not in primary_channels + ham_radio_channels + other_channels + public_voice_channels) and \
 		(message.guild.id != 452274699641159683):
-		await message.add_reaction("❌")
+		await __common__.failure(message)
 		return
 
 	# Take away the proper write/speak permission
@@ -84,7 +84,7 @@ async def unlock(command: str, message: discord.Message):
 	else:
 		if 639519325287350272 not in [x.id for x in message.author.roles]:
 			# user is not a mod
-			await message.add_reaction("❌")
+			await __common__.failure(message)
 			return
 
 	parts = command.split(" ")
@@ -99,10 +99,10 @@ async def unlock(command: str, message: discord.Message):
 		else:
 			target = message.channel
 	else:
-		target = message.guild.get_channel(__common__.stripMentionsToID(parts[1]))
+		target = message.guild.get_channel(__common__.strip_to_id(parts[1]))
 	if (target.id not in primary_channels + ham_radio_channels + other_channels + public_voice_channels) and \
 		(message.guild.id != 452274699641159683):
-		await message.add_reaction("❌")
+		await __common__.failure(message)
 		return
 
 	# Set the proper write/speak permission
@@ -126,7 +126,7 @@ async def nuke_old_chat(command: str, message: discord.Message):
 	else:
 		if 639519325287350272 not in [x.id for x in message.author.roles]:
 			# user is not a mod
-			await message.add_reaction("❌")
+			await __common__.failure(message)
 			return
 
 	parts = command.split(" ")

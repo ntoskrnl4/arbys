@@ -149,12 +149,12 @@ async def command(parts: str, message: discord.Message):
 	if len(parts) > 1:
 
 		# get channel if it is one
-		c = client.get_channel(__common__.stripMentionsToID(parts[1]))
+		c = client.get_channel(__common__.strip_to_id(parts[1]))
 		if c is not None:
 			target = c
 			target_type = "channel"
 
-		u = client.get_user(__common__.stripMentionsToID(parts[1]))
+		u = client.get_user(__common__.strip_to_id(parts[1]))
 		if u is not None:
 			target = u
 			target_type = "user"

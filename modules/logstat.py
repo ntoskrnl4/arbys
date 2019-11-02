@@ -101,7 +101,7 @@ def match_user_id(string) -> Union[int, None]:
 async def logstat(command: str, message: discord.Message):
 	global use_mpl
 	if not __common__.check_permission(message.author):
-		await message.add_reaction("❌")
+		await __common__.failure(message)
 		return
 
 	profiling = "--profile" in message.content
@@ -233,7 +233,7 @@ async def logstat(command: str, message: discord.Message):
 		if parts[2] in ["users", "user"]:
 			# check if need to filter to a channel
 			try:
-				filter_channel = __common__.stripMentionsToID(parts[4])
+				filter_channel = __common__.strip_to_id(parts[4])
 			except TypeError:
 				# ignore, we're not filtering to a channel
 				pass
@@ -246,7 +246,7 @@ async def logstat(command: str, message: discord.Message):
 		if parts[2] in ["channel", "channels"]:
 			# check if we need to filter to a user
 			try:
-				filter_user = __common__.stripMentionsToID(parts[3])
+				filter_user = __common__.strip_to_id(parts[3])
 			except TypeError:
 				# ignore, we're not filtering to a user
 				pass
