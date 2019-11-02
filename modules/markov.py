@@ -80,7 +80,7 @@ async def command(parts: str, message: discord.Message):
 		await message.channel.send(embed=response)
 		return
 	except ValueError:
-		charlimit = 1500
+		charlimit = 2000
 
 	try:
 		attempts = parts.pop(parts.index("--attempts")+1)
@@ -93,7 +93,7 @@ async def command(parts: str, message: discord.Message):
 		await message.channel.send(embed=response)
 		return
 	except ValueError:
-		attempts = 25
+		attempts = 50
 
 	try:
 		size = parts.pop(parts.index("--size")+1)
