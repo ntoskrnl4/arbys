@@ -30,6 +30,22 @@ public_voice_channels: List[int] = [
 	422047295941640212,  # ham-voice
 ]
 
+lock_help = {
+	"Usage": f"`{client.default_prefix}lock`\n"
+			f"`{client.default_prefix}unlock`",
+	"Arguments": "None",
+	"Description": "Locks or unlocks the specified channel in case of a raid or general chaos. This command must be run in the target channel. Moderator-only channels cannot be locked."
+}
+
+purge_help = {
+	"Usage": f"`{client.default_prefix}purge [n]`",
+	"Arguments": "`n` - (Optional) Number of messages to delete, capped at 100. (default 25)",
+	"Description": "Nukes some number of recent messages in a channel.",
+}
+client.long_help("lock", lock_help)
+client.long_help("unlock", lock_help)
+client.long_help("purge", purge_help)
+
 try:
 	yarc_role = client.get_guild(364480908528451584).get_role(639519325287350272)
 except AttributeError:
@@ -145,3 +161,17 @@ async def nuke_old_chat(command: str, message: discord.Message):
 	await message.channel.delete_messages(target_msgs)
 	return
 
+
+@client.command(trigger="modtools")
+async def help_mods(command: str, message: discord.Message):
+	embed = discord.Embed(title=f"Tools in {client.bot_name} for moderators",
+						description="Specifically with application to the Young Hams server",
+						colour=0x419bb8)
+	embed = embed.add_field(name="Join/Leave Info", value="When a person joins, information about them will be posted such as account name, ID, creation date, and the new member count. When a person leaves, information about them will be posted such as account name, ID, join date, and new member count.")
+	embed = embed.add_field(name="Name Autoban", value="Users who attempt to join with `discord.gg` in their name will be autobanned upon joining. This is as a result of the indexing \"virus\" bots that spread around Discord some time ago.")
+	embed = embed.add_field(name="Ping Spam Autokick", value="Users who spam too many pings will be automatically kicked as an anti-spambot/anti-raid measure. Criteria are either: (A) 30+ pings to a single person within one minute, or (B) 8+ pings to 8 different people within one minute.")
+	embed = embed.add_field(name="Message and File Logger", value="All messages and files that are sent are automatically saved and downloaded locally (up to 7 days for attachments). This can be used to log users that are banned and inspect suspicious attachments.")
+	embed = embed.add_field(name="Channel Locker", value="In case of emergency/chaos, public channels can be locked to calm down chaos. `cqdx lock` and `cqdx unlock` can only be run in that target channels, and moderator-only channels cannot be locked/unlocked (attempting to unlock a moderator-only channel would make it publicly accessible).")
+	embed = embed.add_field(name="Message Purge", value="When necessary, recent messages in a channel can be purged with `cqdx purge [n]`, where `n` is the number of messages to delete including the command itself (default 25). Maximum purge size is 100 messages.")
+	if yarc_role in message.author.roles:
+		await message.channel.send(embed=embed)
