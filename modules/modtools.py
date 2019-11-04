@@ -1,3 +1,4 @@
+import log
 from client import client
 from modules import __common__
 from typing import List, Union
@@ -29,7 +30,10 @@ public_voice_channels: List[int] = [
 	422047295941640212,  # ham-voice
 ]
 
-yarc_role = client.get_guild(364480908528451584).get_role(425443973700648971)
+try:
+	yarc_role = client.get_guild(364480908528451584).get_role(639519325287350272)
+except AttributeError:
+	log.critical(f"YARC moderator role not found. Mod commands will raise an exception when run.")
 
 
 @client.command(trigger="lock", aliases=["l"])
@@ -40,7 +44,7 @@ async def lock(command: str, message: discord.Message):
 			await message.channel.send("Invalid server")
 			return
 	else:
-		if 639519325287350272 not in [x.id for x in message.author.roles]:
+		if yarc_role not in message.author.roles:
 			# user is not a mod
 			await __common__.failure(message)
 			return
@@ -82,7 +86,7 @@ async def unlock(command: str, message: discord.Message):
 			await message.channel.send("Invalid server")
 			return
 	else:
-		if 639519325287350272 not in [x.id for x in message.author.roles]:
+		if yarc_role not in message.author.roles:
 			# user is not a mod
 			await __common__.failure(message)
 			return
@@ -124,7 +128,7 @@ async def nuke_old_chat(command: str, message: discord.Message):
 			await message.channel.send("Invalid server")
 			return
 	else:
-		if 639519325287350272 not in [x.id for x in message.author.roles]:
+		if yarc_role not in message.author.roles:
 			# user is not a mod
 			await __common__.failure(message)
 			return
