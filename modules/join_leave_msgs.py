@@ -21,8 +21,8 @@ async def join_notification(member: discord.Member):
 		embed = embed.add_field(name="ID", value=member.id)
 		embed = embed.add_field(name="Mention", value=member.mention)
 		embed = embed.add_field(name="New Member Count", value=member.guild.member_count)
-		created_ts = await client.fetch_user(member.id)
-		embed = embed.add_Field(name="Account Created At", value=f"{created_ts.__str__()}\n{str(datetime.utcnow()-created_ts)}")
+		created_ts = (await client.fetch_user(member.id)).created_at
+		embed = embed.add_field(name="Account Created At", value=f"{created_ts.__str__()}\n{str(datetime.utcnow()-created_ts)}")
 		embed = embed.set_footer(text=member.joined_at)
 		await client.get_channel(473570993072504832).send(embed=embed)
 
