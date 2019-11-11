@@ -29,7 +29,7 @@ async def return_bot_info(command: str, message: discord.Message):
 		python_version += f"rc{sys.version_info.serial}"
 
 	embed = discord.Embed(title=f"{client.bot_name} info", description=discord.Embed.Empty, color=0x404040)
-	embed = embed.add_field(name="Version", value=f"Framework version {client.__version__}\nBot version 1.1")
+	embed = embed.add_field(name="Version", value=f"Framework version {client.__version__}")
 	embed = embed.add_field(name="Creator", value=f"{owner.name}#{owner.discriminator}\nID {owner.id}\n{owner.mention}")
 	embed = embed.add_field(name="Github", value="`young-amateurs-rc/arbys`\nhttps://www.github.com/young-amateurs-rc/arbys")
 	embed = embed.add_field(name="Built with", value=f"Running on {python_version}\ndiscord.py library version {discord.__version__}\nntoskrnl-bot framework (`ntoskrnl4/ntoskrnl-bot`)")
