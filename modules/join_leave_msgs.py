@@ -5,13 +5,6 @@ import discord
 
 @client.member_join
 async def join_notification(member: discord.Member):
-	if "discord.gg" in member.name and member.guild.id == 364480908528451584:
-		try:
-			await member.ban()
-		except:
-			await client.get_channel(473570993072504832).send("Attempted to autoban user below for \"discord.gg\" in username but failed!")
-		else:
-			await client.get_channel(473570993072504832).send("Successfully autobanned below user for \"discord.gg\" in username.")
 	if member.guild.id == 364480908528451584:
 		with open("logs/members.log", "a") as lf:
 			lf.write(f"{member.joined_at.__str__()}+{member.guild.member_count}\n")

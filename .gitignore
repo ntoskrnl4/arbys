@@ -1,7 +1,8 @@
 key.py
 config.py
 
-.idea/
-__pycache__/
-playlists/
-logs/
+.idea/*
+__pycache__/*
+playlists/*
+logs/*
+modules/deprecated/*
