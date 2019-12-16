@@ -13,7 +13,7 @@ import random
 import socket
 import struct
 
-SERVER_URL = "165.22.81.141"  # Port is default 25565
+SERVER_URL = "mc.usu.xyz"  # Port is default 25565
 COMMAND_TRIGGER = "mc"  # "mc" default
 
 
@@ -388,33 +388,3 @@ async def mc(command: str, message: discord.Message):
 		
 		file = discord.File(fp=buffer, filename="icon.png")
 	await message.author.send(file=file, embed=embed)  # Send embed
-
-
-current_status = False
-last1_status = True
-last2_status = True
-notified_offline = False
-notification_channel = client.get_user(288438228959363073)
-disable_online_check = False
-
-
-@client.background(period=20)
-async def check_online():
-	if disable_online_check:
-		return
-	global last2_status, last1_status, current_status, notified_offline
-	last2_status = last1_status
-	last1_status = current_status
-	try:
-		s = socket.create_connection((SERVER_URL, 25565), timeout=5)
-	except (TimeoutError, ConnectionError):
-		current_status = False
-		# offline code
-		if not any([current_status, last1_status, last2_status]) and not notified_offline:
-			# been offline for a minute
-			await notification_channel.send(f"Uptime alert: `{SERVER_URL}` (YARC Minecraft 2) has been offline for 1 minute.")
-			notified_offline = True
-	else:
-		s.close()
-		current_status = True
-		notified_offline = False
