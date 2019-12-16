@@ -31,7 +31,7 @@ async def get_ntp_stats(command: str, message: discord.Message):
 		jitter = float([x for x in parts if x.startswith("sys_jitter=")][0][11:])*1000
 
 	embed = discord.Embed(title="NTP Statistics",
-						description="Current NTP statistics for the local machine")
+						description="NTP synchronization info for Arbys' local machine")
 	if alt:
 		embed.description = embed.description + "\n\nUnknown error while getting statistics."
 
@@ -39,7 +39,7 @@ async def get_ntp_stats(command: str, message: discord.Message):
 		embed = embed.add_field(name="Sync Status", value=sync_status)
 		embed = embed.add_field(name="System Peer RefID", value=refid)
 		embed = embed.add_field(name="System Stratum", value=stratum)
-		embed = embed.add_field(name="Offset", value=f"{offset} us")
+		embed = embed.add_field(name="Offset", value=f"{round(offset, 3)} us")
 		embed = embed.add_field(name="Jitter", value=f"{jitter} us")
 		embed = embed.add_field(name="Frequency Drift", value=f"{freq} ppm")
 
