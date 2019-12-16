@@ -36,72 +36,63 @@ def get_any_member(target: int):
 async def command(command: str, message: discord.Message):
 	parts = command.split(" ")
 	if len(parts) == 1:
-		# no following argument
-		await message.channel.send(f"You ran this command without arguments. The old `{client.default_prefix}info` command has been moved to `{client.default_prefix}about`, and this command is now what `{client.default_prefix}debug` used to be.")
-		return
+		parts.append(str(message.author.id))
 	try:
-		try:
-			u = await client.fetch_user(__common__.strip_to_id(parts[1]))
-		except TypeError:
-			await message.channel.send("Invalid argument: integer ID or mentions are acceptable")
-			return
-		except:
-			isUser = False
-		else:
-			isUser = True
-
-		s = client.get_guild(__common__.strip_to_id(parts[1]))
-		if s is None:
-			isServer = False
-		else:
-			isServer = True
-
-		c = client.get_channel(__common__.strip_to_id(parts[1]))
-		if c is None:
-			isTextChannel = False
-			isVoiceChannel = False
-		else:
-			if isinstance(c, discord.TextChannel):
-				isTextChannel = True
-				isVoiceChannel = False
-			elif isinstance(c, discord.VoiceChannel):
-				isTextChannel = False
-				isVoiceChannel = True
-			else:
-				await message.channel.send("Invalid channel type - handling for this is not implemented. Sorry.")
-				return
-
-	except ValueError:
-		u = message.author
+		u = await client.fetch_user(__common__.strip_to_id(parts[1]))
+	except TypeError:
+		await message.channel.send("Invalid argument: integer ID or mentions are acceptable")
+		return
+	except:
+		isUser = False
+	else:
 		isUser = True
-		s = message.guild
+
+	s = client.get_guild(__common__.strip_to_id(parts[1]))
+	if s is None:
+		isServer = False
+	else:
 		isServer = True
-		c = message.channel
-		isTextChannel = True
+
+	c = client.get_channel(__common__.strip_to_id(parts[1]))
+	if c is None:
+		isTextChannel = False
 		isVoiceChannel = False
+	else:
+		if isinstance(c, discord.TextChannel):
+			isTextChannel = True
+			isVoiceChannel = False
+		elif isinstance(c, discord.VoiceChannel):
+			isTextChannel = False
+			isVoiceChannel = True
+		else:
+			await message.channel.send("Invalid channel type - handling for this is not implemented. Sorry.")
+			return
 
 	if isUser and not "--status" in command:
 		user_embed = discord.Embed(title="User Information", description=f"Information about {u.mention}", color=0x3127b3)
-		user_embed = user_embed.set_thumbnail(url=u.avatar_url_as(static_format="png", size=1024))
-		user_embed = user_embed.add_field(name="Human-Friendly User ID", value=u.name+"#"+u.discriminator)
-		user_embed = user_embed.add_field(name="User Avatar URL", value=u.avatar_url_as(static_format="png", size=1024))
-		user_embed = user_embed.add_field(name="Raw User ID", value=u.id)
-		user_embed = user_embed.add_field(name="Is Bot", value=u.bot)
-		user_embed = user_embed.add_field(name="Account Creation Time", value=u.created_at)
+		user_embed = user_embed.set_thumbnail(url=u.avatar_url)
+		user_embed = user_embed.add_field(name="Tag", value=u.name+"#"+u.discriminator)
+#		user_embed = user_embed.add_field(name="User Avatar URL", value=u.avatar_url_as(static_format="png", size=1024))
 		if message.guild.get_member(u.id) is not None:
 			m = message.guild.get_member(u.id)
-			roles = "\n".join([f"{x.name} ({x.id})" for x in m.roles][::-1])
-			user_embed = user_embed.add_field(name="Roles in this server", value=roles, inline=False)
-			user_embed = user_embed.add_field(name="User Nickname", value=m.display_name)
-			user_embed = user_embed.add_field(name="Joined this server on", value=m.joined_at.__str__())
+			user_embed = user_embed.add_field(name="Nickname", value=m.display_name)
+		user_embed = user_embed.add_field(name="Raw ID", value=u.id)
+#		user_embed = user_embed.add_field(name="Is Bot", value=u.bot)
+		ctime_str = f"{str(u.created_at)}\n({str(datetime.datetime.utcnow()-u.created_at)})"
+		user_embed = user_embed.add_field(name="Account Creation Time", value=ctime_str)
 		if get_any_member(u.id) is not None:
 			m = get_any_member(u.id)
-			user_embed = user_embed.add_field(name="Current State",
+			user_embed = user_embed.add_field(name="Current Status",
 												value=f"Apparent Status: {status_emoji(m.status)}\n"
 														f"Desktop: {status_emoji(m.desktop_status)}\n"
 														f"Web: {status_emoji(m.web_status)}\n"
 														f"Mobile: {status_emoji(m.mobile_status)}\n",
-												inline=False)
+												inline=True)
+		if message.guild.get_member(u.id) is not None:
+			jtime_str = f"{str(m.joined_at)}\n({str(datetime.datetime.utcnow()-m.joined_at)})"
+			user_embed = user_embed.add_field(name="Joined this server", value=jtime_str)
+			roles = "\n".join([f"{x.name} ({x.id})" for x in m.roles][::-1])
+			user_embed = user_embed.add_field(name="Roles in this server", value=roles, inline=False)
 		user_embed = user_embed.set_footer(text=datetime.datetime.utcnow().__str__())
 
 	if isUser and "--status" in command:
@@ -122,7 +113,7 @@ async def command(command: str, message: discord.Message):
 		server_embed = server_embed.add_field(name="Name", value=s.name)
 		server_embed = server_embed.add_field(name="Raw ID", value=s.id)
 		icon = s.icon_url_as(format="png", size=1024)
-		if not icon:  # Used to be != "" before icon was a discord.Asset, credit to eyyyyyy/0x5c for finding/fixing this
+		if not icon:  # Used to be != "" before icon was a discord.Asset, credit to eyyyyyy for finding/fixing this
 			icon = "[no custom icon]"
 			server_embed = server_embed.set_thumbnail(url=s.icon_url)
 		server_embed = server_embed.add_field(name="Icon URL", value=icon)
