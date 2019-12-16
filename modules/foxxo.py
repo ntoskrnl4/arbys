@@ -5,18 +5,45 @@ import discord
 import log
 import random
 
+if client.is_ready():
+	foxxo_channel = client.get_channel(526155899295891456)
+	foxxo_channel_cache = []
+	
+	wolfie_channel = client.get_channel(565247287534682112)
+	wolfie_channel_cache = []
+	
+	doggo_channel = client.get_channel(564533446504873986)
+	doggo_channel_cache = []
+	
+	raccoon_channel = client.get_channel(563314782141153321)
+	raccoon_channel_cache = []
+else:
+	foxxo_channel = None
+	foxxo_channel_cache = None
+	
+	wolfie_channel = None
+	wolfie_channel_cache = None
+	
+	doggo_channel = None
+	doggo_channel_cache = None
+	
+	raccoon_channel = None
+	raccoon_channel_cache = None
 
-foxxo_channel = client.get_channel(526155899295891456)
-foxxo_channel_cache = []
-
-wolfie_channel = client.get_channel(565247287534682112)
-wolfie_channel_cache = []
-
-doggo_channel = client.get_channel(564533446504873986)
-doggo_channel_cache = []
-
-raccoon_channel = client.get_channel(563314782141153321)
-raccoon_channel_cache = []
+@client.ready
+async def initialize():
+	global foxxo_channel, foxxo_channel_cache, wolfie_channel, wolfie_channel_cache, doggo_channel, doggo_channel_cache, raccoon_channel, raccoon_channel_cache
+	foxxo_channel = client.get_channel(526155899295891456)
+	foxxo_channel_cache = []
+	
+	wolfie_channel = client.get_channel(565247287534682112)
+	wolfie_channel_cache = []
+	
+	doggo_channel = client.get_channel(564533446504873986)
+	doggo_channel_cache = []
+	
+	raccoon_channel = client.get_channel(563314782141153321)
+	raccoon_channel_cache = []
 
 
 async def get_channel_images(channel: discord.TextChannel) -> List[Tuple[str, int]]:
@@ -130,5 +157,5 @@ async def get_foxxo(command: str, message: discord.Message):
 	log.debug(f"modules.foxxo.command: Had {len(images)} choices and chose one from Message ID {image_id}")
 	embed = discord.Embed()
 	embed = embed.set_image(url=image_url)
-	embed = embed.set_footer(text=f"If this doesn't load/isn't a valid URL, please notify ntoskrnl (Message ID: {image_id})")
+	embed = embed.set_footer(text=f"Message ID {image_id}")
 	await message.channel.send(embed=embed)
