@@ -12,7 +12,7 @@ import os
 import time
 
 
-@client.command(trigger="kill", aliases=["exit"])
+@client.command(trigger="exit", aliases=["kill"])
 async def command(command: str, message: discord.Message):
 	if message.author.id != shutdown_user:
 		await __common__.failure(message)

@@ -6,7 +6,7 @@ def check_command_prefix(message: str, prefixes: List[str]) -> Tuple[bool, Union
 	# bots will cause a bug in command triggers where "xxx<whatever>" triggers the same command as "xxx". This function
 	# is the correct version for commands that also checks by splitting the message.
 	for prefix in prefixes:
-		if message.lower().startswith(prefix) and (message.split(" ")[0].lower() == prefix.lower().strip()):
+		if message.lower().startswith(prefix) and (message.split("\n")[0].split(" ")[0].lower() == prefix.lower().strip()):
 			return True, prefix
 	return False, None
 

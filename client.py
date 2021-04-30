@@ -338,4 +338,6 @@ class FrameworkClient(discord.Client):
 		log.debug(f"registered new long_help entry for command {cmd}")
 
 
-client = FrameworkClient(status=discord.Status(config.boot_status), max_messages=config.message_cache_size)
+client = FrameworkClient(status=discord.Status(config.boot_status),
+                         max_messages=config.message_cache_size,
+                         intents=discord.Intents.all())

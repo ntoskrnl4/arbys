@@ -110,11 +110,10 @@ class MusicInterface:
 						"Perhaps the documentation is incomplete?")
 			# wtf do we do??
 			raise
-		else:
-			self.initialized = True
-			_active_ifaces[self.channel] = self
 		
-		asyncio.create_task(self.change_source(sources.EmptySource()))  # Clear a TX bug when joining
+		self.initialized = True
+		_active_ifaces[self.channel] = self
+		self._client.play(sources.EmptySource())  # Clear a TX bug when joining
 		
 	async def change_source(self, new_source: Union[discord.AudioSource, Song, None]) -> discord.Embed:
 		"""
@@ -131,7 +130,7 @@ class MusicInterface:
 			return
 		if isinstance(new_source, sources.EmptySource):
 			self.song = None
-			self._client.source = new_source
+			self._client.play(new_source)
 			return
 		if isinstance(new_source, discord.AudioSource):
 			log.error("modules.music.interface.MusicInterface: AudioSource was changed from underneath us")

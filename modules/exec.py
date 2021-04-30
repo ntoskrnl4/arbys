@@ -11,7 +11,6 @@ import sys
 import time
 
 
-
 @client.command(trigger="_exec", aliases=[])
 async def command(command: str, message: discord.Message):
 	if message.author.id != 288438228959363073:

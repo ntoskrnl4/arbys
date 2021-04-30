@@ -7,20 +7,33 @@ import discord
 import importlib
 import modules
 
-# client.basic_help("livepatch",
-# 				  "A system of commands to assist in livepatching modules")
+client.basic_help("livepatch", "A module to load, reload, or unload modules on-the-fly")
 
 detailed_help = {
 	"Usage": f"`{client.default_prefix}livepatch <subcommands> []`",
-	"Description": "This command is a kit of commands that can load and unload "
+	"Description": "This module is a kit of commands that can load and unload "
 		"modules on the fly while a bot is running, and show information about "
-		"currently loaded commands. Beware this command can disable itself."
+		"currently loaded commands. Beware that this command can disable itself."
 }
 
 client.long_help("livepatch", detailed_help)
 
 permissible_users = [  # list of IDs permitted to use the command
 	288438228959363073
+]
+
+# Correct for framework version 0.6
+# As of 0.7 these remove the leading underscore
+client_lists = [
+	# a list of all handlers the bot has
+	client._background_tasks,
+	client._ready_handlers,
+	client._shutdown_handlers,
+	client._message_handlers,
+	client._member_join_handlers,
+	client._member_remove_handlers,
+	client._reaction_add_handlers,
+	client._reaction_remove_handlers,
 ]
 
 
@@ -68,9 +81,14 @@ async def main(command: str, message: discord.Message):
 		if len(parts) == 2:
 			await message.channel.send("Argument error: Please specify module to reload")
 			return
+		
 		importlib.invalidate_caches()
 		importlib.reload(modules)
-		importlib.reload(eval("modules." + parts[2]))
+		try:
+			importlib.reload(eval("modules." + parts[2]))
+		except AttributeError:
+			await message.channel.send("Argument error: Non-existent module provided")
+			return
 		await __common__.confirm(message)
 		return
 	
@@ -78,21 +96,8 @@ async def main(command: str, message: discord.Message):
 		if len(parts) == 2:
 			await message.channel.send("Argument error: Please specify module to unload")
 			return
-		# Correct for framework version 0.6
-		# As of 0.7 these remove the leading underscore
-		client_lists = [
-			# a list of all handlers the bot has
-			client._background_tasks,
-			client._ready_handlers,
-			client._shutdown_handlers,
-			client._message_handlers,
-			client._member_join_handlers,
-			client._member_remove_handlers,
-			client._reaction_add_handlers,
-			client._reaction_remove_handlers,
-		]
 		for list in client_lists:
-			list = [x for x in list if x.__module__ != parts[2]]
+			list = [x for x in list if x.__module__ != f"modules.{parts[2]}"]
 		
 		client._command_lookup = {
 			x: y

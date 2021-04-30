@@ -26,7 +26,7 @@ async def get_song_information(url: str) -> Dict[str, Union[str, float]]:
 	:return: Data about the song that was discovered.
 	"""
 	data = None
-	data = ytdl_session.extract_info(url, download=False)  # THIS BLOCKS. Todo: fix
+	data = ytdl_session.extract_info(url, download=False)
 	while data is None:
 		await asyncio.sleep(0.1)
 		
@@ -212,8 +212,8 @@ class Song:
 				embed = discord.Embed(title=title, description=f"In queue at position {queue_pos}", colour=0xbf35e3)
 		else:
 			embed = discord.Embed(title=title, description=discord.Embed.Empty, colour=0xbf35e3)
-		embed = embed.add_field(name="Name", value=self.name)
-		embed = embed.add_field(name="Duration", value=f"{self._AudioSourceObject.progress//60}m{self._AudioSourceObject.progress%60}s / {self.length//60}m{self.length%60}s")
+		embed = embed.add_field(name="Name", value=self.name, inline=False)
+		embed = embed.add_field(name="Duration", value=f"{self._AudioSourceObject.progress//60}m{self._AudioSourceObject.progress%60}s / {self.length//60}m{self.length%60}s", inline=False)
 		return embed
 		
 	def __del__(self):

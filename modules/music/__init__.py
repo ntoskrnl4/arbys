@@ -62,67 +62,66 @@ async def tree_root(command: str, message: discord.Message):
 	assert isinstance(message.author, discord.Member)
 	assert isinstance(message.guild, discord.Guild)
 	# await message.channel.trigger_typing()
-	if parts[1] == "join":
-		# Different possible states to be in:
-		# 	User not in voice, bot not in voice
-		# 	User not in voice, bot in voice
-		# 	User in voice, bot not in voice (bingo!)
-		# 	User in voice, bot in voice, same channel
-		# 	User in voice, bot in voice, different channel
-		if message.author.voice is None:
-			# user not in voice
-			if message.guild.me.voice is None:
-				# user not in voice, we're not in voice
-				await message.channel.send("Cannot join channel: Ambiguous/unknown target channel")
-				return
-			else:
-				# user not in voice, we're in voice
-				await message.channel.send("Cannot join channel: Already in a channel (also, next time please "
-											"join the channel you are referring to first)")
-				return
-		else:
-			# user in voice
-			if message.guild.me.voice is None:
-				# user in voice, we're not in voice
-				# correct usage
-				try:
-					await mgr.connect(message.author.voice.channel)
-					breakpoint()
-				except TimeoutConnectingError:
-					await message.channel.send("Channel join failed: Timeout")
-					return
-				except discord.opus.OpusNotLoaded:
-					await message.channel.send("Internal error: Opus module not loaded\n(fun fact, "
-												"this code branch shouldn't be hit)")
-					return
-				except GuildAlreadyConnected:
-					await message.channel.send("State error: There is already another active voice connection in "
-												"this guild\n(fun fact, this code branch shouldn't be hit)")
-					return
-				except NoJoinPermission:
-					await message.channel.send("Cannot join channel: Insufficient permissions to connect to the channel")
-					return
-				except NoSpeakPermission:
-					await message.channel.send("Refusing to join channel: Insufficient permissions to speak in the channel")
-					return
-				except Exception as e:
-					log.warning("Unknown exception trying to join the channel")
-					raise
-				await confirm(message, "Joined the channel")
-			else:
-				if message.guild.me.voice.channel == message.author.voice.channel:
-					# user in voice, we're in voice, same channel
-					await message.channel.send("Already in this channel with you")
+	async with master_lock:
+		if parts[1] == "join":
+			# Different possible states to be in:
+			# 	User not in voice, bot not in voice
+			# 	User not in voice, bot in voice
+			# 	User in voice, bot not in voice (bingo!)
+			# 	User in voice, bot in voice, same channel
+			# 	User in voice, bot in voice, different channel
+			if message.author.voice is None:
+				# user not in voice
+				if message.guild.me.voice is None:
+					# user not in voice, we're not in voice
+					await message.channel.send("Cannot join channel: Ambiguous/unknown target channel")
 					return
 				else:
-					# user in voice, we're in voice, different channel
-					await message.channel.send("Cannot join channel: Already in a different channel in this server")
+					# user not in voice, we're in voice
+					await message.channel.send("Cannot join channel: Already in a channel (also, next time please "
+												"join the channel you are referring to first)")
 					return
-	
-	if parts[1] == "add":
-		media = command.split(" ", 1)[1][4:]  # Get just the media
-		if media == "":
-			await message.channel.send("Nothing given to add to queue")
-			return
-		await mgr.add_to_queue(media)
-			
+			else:
+				# user in voice
+				if message.guild.me.voice is None:
+					# user in voice, we're not in voice
+					# correct usage
+					try:
+						await mgr.connect(message.author.voice.channel)
+					except TimeoutConnectingError:
+						await message.channel.send("Channel join failed: Timeout")
+						return
+					except discord.opus.OpusNotLoaded:
+						await message.channel.send("Internal error: Opus module not loaded\n(fun fact, "
+													"this code branch shouldn't be hit)")
+						return
+					except GuildAlreadyConnected:
+						await message.channel.send("State error: There is already another active voice connection in "
+													"this guild\n(fun fact, this code branch shouldn't be hit)")
+						return
+					except NoJoinPermission:
+						await message.channel.send("Cannot join channel: Insufficient permissions to connect to the channel")
+						return
+					except NoSpeakPermission:
+						await message.channel.send("Refusing to join channel: Insufficient permissions to speak in the channel")
+						return
+					except Exception as e:
+						log.warning("Unknown exception trying to join the channel")
+						raise
+					await confirm(message, "Joined the channel")
+				else:
+					if message.guild.me.voice.channel == message.author.voice.channel:
+						# user in voice, we're in voice, same channel
+						await message.channel.send("Already in this channel with you")
+						return
+					else:
+						# user in voice, we're in voice, different channel
+						await message.channel.send("Cannot join channel: Already in a different channel in this server")
+						return
+		
+		if parts[1] == "add":
+			media = command.split(" ", 1)[1][4:]  # Get just the media
+			if media == "":
+				await message.channel.send("Nothing given to add to queue")
+				return
+			await mgr.add_to_queue(media)

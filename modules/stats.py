@@ -13,10 +13,12 @@ try:
 	import psutil
 except ModuleNotFoundError:
 	has_psutil = False
+	psutil = None
 else:
 	has_psutil = True
+	psutil_update_thread = None
 
-client.basic_help(title="stats", desc=f"shows various running statistics of {client.bot_name}")
+client.basic_help(title="stats", desc=f"Shows running statistics of {client.bot_name}")
 
 detailed_help = {
 	"Usage": f"{client.default_prefix}stats",
@@ -24,20 +26,6 @@ detailed_help = {
 	"Related": f"`{client.default_prefix}info` - shows information about {client.bot_name}",
 }
 client.long_help(cmd="stats", mapping=detailed_help)
-
-
-@client.ready
-async def readier():
-	def psutil_update_thread_loop(client):
-		while client.active:
-			# self_process.cpu_percent()  # not sure how to optimize this loop in another thread so we're going to comment it out and deal with it for now
-			psutil.cpu_percent(percpu=True)
-			time.sleep(5)
-
-	global psutil_update_thread
-	psutil_update_thread = threading.Thread(target=psutil_update_thread_loop, name="PSUtil_Background_Loop", args=[client])
-
-	return
 
 
 @client.command(trigger="stats", aliases=["statistics", "s", "status"])
@@ -88,7 +76,7 @@ async def statistics(command: str, message: discord.Message):
 			embed = embed.add_field(name="System RAM Usage", value=f"{m_used/(1024*1024):.1f}/{m_total/(1024*1024):.1f} MiB ({(m_used/m_total)*100:.2f}%)")
 			embed = embed.add_field(name="System CPU", value=cpu_text)
 		
-		if client.__version__ == "0.7.0":
+		if client.__version__ == "0.7":
 			# todo: v0.7 - update references
 			raise RuntimeError("TODO: Update references")
 		

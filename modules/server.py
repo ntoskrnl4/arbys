@@ -14,7 +14,7 @@ import socket
 import struct
 import time
 
-port = 40933
+port = 40934
 
 
 # Struct cheat sheet
@@ -48,15 +48,14 @@ async def handle_connection(reader: asyncio.StreamReader, writer: asyncio.Stream
 
 	while not reader.at_eof():
 		try:  # we don't want a broken client to kill the entire bot
-			next_len, = struct.unpack(">L", await reader.read(2))
+			next_len, = struct.unpack(">L", await reader.read(4))
 			in_data = json.loads(await reader.readexactly(next_len))
-			await handle_input(in_data, reader, writer)
+			await handle_input(in_data, writer)
 		except Exception as e:
-			log.warning(f"server: Error during client receive: {str(e)}")
 			pass
 
 
-async def handle_input(data, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+async def handle_input(data, writer: asyncio.StreamWriter):
 	format = data.get("type", None)
 	if format is None:
 		# if the client won't tell us what they're sending why should we even bother

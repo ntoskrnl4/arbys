@@ -99,6 +99,8 @@ def match_user_id(string) -> Union[int, None]:
 
 @client.command(trigger="logstat")
 async def logstat(command: str, message: discord.Message):
+	await message.channel.send("Command disabled: System will run out of memory if ran")
+	return
 	global use_mpl
 	if not __common__.check_permission(message.author):
 		await __common__.failure(message)

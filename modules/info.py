@@ -8,7 +8,7 @@ import discord
 
 cmd_name = "info"
 
-client.basic_help(title=cmd_name, desc="Shows information about a specified object.")
+client.basic_help(title=cmd_name, desc="Shows information about a given server, channel, or user.")
 
 detailed_help = {
 	"Usage": f"{client.default_prefix}{cmd_name} <object>",
@@ -89,6 +89,7 @@ async def command(command: str, message: discord.Message):
 														f"Mobile: {status_emoji(m.mobile_status)}\n",
 												inline=True)
 		if message.guild.get_member(u.id) is not None:
+			m = message.guild.get_member(u.id)
 			jtime_str = f"{str(m.joined_at)}\n({str(datetime.datetime.utcnow()-m.joined_at)})"
 			user_embed = user_embed.add_field(name="Joined this server", value=jtime_str)
 			roles = "\n".join([f"{x.name} ({x.id})" for x in m.roles][::-1])

@@ -21,6 +21,7 @@ class EmptySource(discord.AudioSource):
 	"""Creates a source that plays 0.02s of silence before returning EOF."""
 	used = False
 	
+	progress = 0
 	def is_opus(self):
 		return False
 	

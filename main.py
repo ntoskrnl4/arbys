@@ -8,13 +8,13 @@ from key import token
 from modules import about
 from modules import ares
 from modules import attachment_downloader
-from modules import call
 from modules import cond
 from modules import cqdx
 from modules import exec
 from modules import exit
 from modules import fivenine
 from modules import foxxo
+from modules import game_reset
 from modules import help
 from modules import htm
 from modules import info
@@ -24,7 +24,7 @@ from modules import logstat
 from modules import markov
 from modules import mc
 from modules import message_log
-from modules import modtools
+from modules import _modtools
 # from modules import music
 from modules import n2yo
 from modules import nou
@@ -37,7 +37,6 @@ from modules import spaceman
 from modules import stats
 from modules import thiccom
 from modules import units
-from modules import unmorse
 from modules import uwu
 from modules import wwv
 

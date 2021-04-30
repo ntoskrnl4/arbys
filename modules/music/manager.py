@@ -68,19 +68,15 @@ class GuildManager:
 		
 		:raises NoActiveConnection: Not connected to a voice channel.
 		:raises StopIteration: Queue has been drained.
-		:return:
 		"""
-		if (not self.channel) and (not self.interface):
+		if (self.channel is not None) and (self.interface is not None):
 			raise NoActiveConnection()
-		while self.queue:
+		while True:
 			try:
 				next = self.queue.popleft()
 			except IndexError:
 				raise StopIteration("Done playing music [queue exhausted]")
-			await self.command_channel.send(
-					embed=
-						await self.interface.change_source(next)
-			)
+			await self.command_channel.send(embed=await self.interface.change_source(next))
 			
 			while self.interface.playing or self.interface.paused:
 				try:

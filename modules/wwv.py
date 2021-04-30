@@ -15,7 +15,7 @@ text_h = "National Institute of Standards and Technology Time, This is radio sta
 		"directed to the National Institute of Standards and Technology, Radio Station WWVH, Post Office Box 417, " \
 		"Kekaha, Hawaii 96752. Aloha.\n"
 
-new_minute = "At the tone, HHHH hours, MMMM minutes, coordinated universal time. .... BEEEEP"
+new_minute = "At the tone, HHHH hours, MMMM minutes, coordinated universal time. DOTS BEEEEP"
 
 time_lookup = {
 	0: "zero",
@@ -84,8 +84,11 @@ time_lookup = {
 @client.command(trigger="wwv", aliases=["time"])
 async def At_the_tone__six_hours_and_twenty_one_minutes__coordinated_universal_time___BEEEEP(command: str, message: discord.Message):
 	time = datetime.datetime.utcnow() + datetime.timedelta(minutes=1)
+	d_sec = 60-time.second
 	if (("--id" in command) or
+			(time.minute == 29) or
 			(time.minute == 30) or
+			(time.minute == 59) or
 			(time.minute == 00)):
 
 		say = f"```\n{text}\n{new_minute}\n```"
@@ -94,6 +97,7 @@ async def At_the_tone__six_hours_and_twenty_one_minutes__coordinated_universal_t
 
 	say = say.replace("HHHH", time_lookup[time.hour])
 	say = say.replace("MMMM", time_lookup[time.minute])
+	say = say.replace("DOTS", "."*d_sec)
 	if time.hour == 1:
 		say = say.replace("hours", "hour")
 	if time.minute == 1:
@@ -105,9 +109,12 @@ async def At_the_tone__six_hours_and_twenty_one_minutes__coordinated_universal_t
 @client.command(trigger="wwvh")
 async def WWVH_transmissions(command: str, message: discord.Message):
 	time = datetime.datetime.utcnow() + datetime.timedelta(minutes=1)
+	d_sec = 60-time.second
 	if (("--id" in command) or
 			(time.minute == 29) or
-			(time.minute == 59)):
+			(time.minute == 30) or
+			(time.minute == 59) or
+			(time.minute == 00)):
 
 		say = f"```\n{text_h}\n{new_minute}\n```"
 	else:
@@ -115,6 +122,7 @@ async def WWVH_transmissions(command: str, message: discord.Message):
 
 	say = say.replace("HHHH", time_lookup[time.hour])
 	say = say.replace("MMMM", time_lookup[time.minute])
+	say = say.replace("DOTS", "."*d_sec)
 	if time.hour == 1:
 		say = say.replace("hours", "hour")
 	if time.minute == 1:

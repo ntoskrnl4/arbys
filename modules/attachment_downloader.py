@@ -5,7 +5,10 @@ import log
 import os
 import time
 
-os.makedirs("attachments/", exist_ok=True)
+try:
+	os.makedirs("attachments/", exist_ok=True)
+except FileExistsError:
+	pass
 
 
 @client.message(receive_self=False)

@@ -30,6 +30,7 @@ else:
 	raccoon_channel = None
 	raccoon_channel_cache = None
 
+
 @client.ready
 async def initialize():
 	global foxxo_channel, foxxo_channel_cache, wolfie_channel, wolfie_channel_cache, doggo_channel, doggo_channel_cache, raccoon_channel, raccoon_channel_cache
@@ -107,13 +108,13 @@ async def get_channel_images(channel: discord.TextChannel) -> List[Tuple[str, in
 async def check_cache(message: discord.Message):
 	global foxxo_channel_cache, doggo_channel_cache, wolfie_channel_cache, raccoon_channel_cache
 
-	if message.channel == foxxo_channel:
+	if (message.channel == foxxo_channel) and not foxxo_channel_cache:
 		foxxo_channel_cache.append(message)
-	if message.channel == wolfie_channel:
+	if (message.channel == wolfie_channel) and not wolfie_channel_cache:
 		wolfie_channel_cache.append(message)
-	if message.channel == raccoon_channel:
+	if (message.channel == raccoon_channel) and not raccoon_channel_cache:
 		raccoon_channel_cache.append(message)
-	if message.channel == doggo_channel:
+	if (message.channel == doggo_channel) and not doggo_channel_cache:
 		doggo_channel_cache.append(message)
 
 
@@ -139,7 +140,6 @@ async def get_foxxo(command: str, message: discord.Message):
 		images.extend(await get_channel_images(wolfie_channel))
 
 	if "--raccoon" in command or \
-		("--coon" in command) or \
 		("--racc" in command) or \
 		("-r" in command):
 		images.extend(await get_channel_images(raccoon_channel))

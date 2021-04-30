@@ -6,20 +6,23 @@ import discord
 import subprocess
 
 
+client.basic_help(title=f"ntp", desc="Shows NTP statistics for the local machine")
+
+
 @client.command(trigger="ntp", aliases=["ntpq"])
 async def get_ntp_stats(command: str, message: discord.Message):
+	embed = discord.Embed(title="NTP Statistics",
+						description="NTP synchronization info for Arbys' local machine")
 	try:
 		sub = subprocess.Popen(["ntpq", "-c", "rv"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
 		await asyncio.sleep(0.1)
 		stdout, stderr = sub.communicate(timeout=0.1)
 	except subprocess.TimeoutExpired:
 		sub.kill()
-		alt = True
+		embed.description = embed.description + "\n\nsubprocess.TimeoutExpired error while getting statistics."
 	except:
-		alt = True
+		embed.description = embed.description + "\n\nUnknown error while getting statistics."
 	else:
-		alt = False
-
 		# make this into a decently easily parsed list
 		parts = stdout.decode().replace("\n", "").replace(" ", "").split(",")
 
@@ -29,13 +32,7 @@ async def get_ntp_stats(command: str, message: discord.Message):
 		offset = float([x for x in parts if x.startswith("offset=")][0][7:])*1000
 		freq = float([x for x in parts if x.startswith("frequency=")][0][10:])
 		jitter = float([x for x in parts if x.startswith("sys_jitter=")][0][11:])*1000
-
-	embed = discord.Embed(title="NTP Statistics",
-						description="NTP synchronization info for Arbys' local machine")
-	if alt:
-		embed.description = embed.description + "\n\nUnknown error while getting statistics."
-
-	if not alt:
+	
 		embed = embed.add_field(name="Sync Status", value=sync_status)
 		embed = embed.add_field(name="System Peer RefID", value=refid)
 		embed = embed.add_field(name="System Stratum", value=stratum)
