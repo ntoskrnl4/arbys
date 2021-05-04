@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, Dict, List, Tuple, Union
 
 import discord
@@ -127,3 +128,9 @@ def parse_arguments(parts: List[str], args: Dict[str, Any]) -> Tuple[List[str], 
         if item.startswith("--"):
             raise RuntimeError(f"Argument error: Unknown argument {item}")
     return parts, parsed
+
+
+def get_timestamp(dt: datetime = None):
+    if dt is None:
+        dt = datetime.utcnow()
+    return str(datetime.replace(dt, microsecond=0))

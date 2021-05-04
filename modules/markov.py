@@ -31,13 +31,14 @@ forbidden_channels = [
 ]
 
 
-async def get_user_markov(user: int, message: discord.Message, size: int, charlimit: int, attempts: int) -> Tuple[int, str]:
+async def get_user_markov(user: int, message: discord.Message):
     input_messages = [x for x in client._connection._messages if x.author.id == user]
     await asyncio.sleep(0.1)
     input_messages = [x for x in input_messages if getattr(x.guild, 'id', -1) == message.guild.id]
     await asyncio.sleep(0.1)
-    input_messages = [x for x in input_messages if x.channel.id not in forbidden_channels]
-    await asyncio.sleep(0.1)
+    if message.channel.id not in forbidden_channels:
+        input_messages = [x for x in input_messages if x.channel.id not in forbidden_channels]
+        await asyncio.sleep(0.1)
     
     # backup code if that's not enough
     if len(input_messages) < 400:
@@ -50,23 +51,16 @@ async def get_user_markov(user: int, message: discord.Message, size: int, charli
             except:
                 continue
     
-    input_messages = [x.content for x in input_messages]
-    src_string = "\n".join(input_messages)
-    model = markovify.NewlineText(src_string, state_size=size)
-    await asyncio.sleep(0.1)
-    return len(input_messages), model.make_short_sentence(max_chars=charlimit, tries=attempts)
+    return input_messages
 
 
-async def get_channel_markov(channel: discord.TextChannel, size: int, charlimit: int, attempts: int) -> Tuple[int, str]:
+async def get_channel_markov(channel: discord.TextChannel):
     try:
         input_messages = await channel.history(limit=3000).flatten()
     except discord.Forbidden:
-        return None, None  # we can't read the channel so this is noootttt going to work at all
-    
-    input_messages = [x.content for x in input_messages]
-    src_string = "\n".join(input_messages)
-    model = markovify.NewlineText(src_string, state_size=size)
-    return len(input_messages), model.make_short_sentence(max_chars=charlimit, tries=attempts)
+        return None  # we can't read the channel so this is noootttt going to work at all
+
+    return input_messages
 
 
 @client.command(trigger=cmd_name)
@@ -79,13 +73,13 @@ async def command(parts: str, message: discord.Message):
         parts, arguments = __common__.parse_arguments(parts, {
             "charlimit": 1500,
             "attempts": 50,
-            "size": 3
+            "size": -1
         })
     except RuntimeError as e:
         response.colour = 0xb81209
         response.title = "Markov function error"
         response.description = str(e) + "\n\nFor help on using this command, run `cqdx help markov`"
-        response.set_footer(text=datetime.utcnow().__str__())
+        response.set_footer(text=__common__.get_timestamp())
         await message.channel.send(embed=response)
         return
     
@@ -127,75 +121,69 @@ async def command(parts: str, message: discord.Message):
             target = channel
     
     if target_type == "unknown":
-        response.colour = 0xb81209
-        response.title = f"Markov function failed"
-        response.description = "Error running markov function: Unknown object specified"
-        response.set_footer(text=f"{datetime.utcnow().__str__()} ")
-        await message.channel.send(embed=response)
+        await message.channel.send("Argument error: Invalid object or user/channel mention")
     
     # run different outputs for different input types
-    if target_type == "user":
-        async with message.channel.typing():
+    async with message.channel.typing():
+
+        if target_type == "user":
             target_member = message.guild.get_member(target.id)
             if target_member is not None:
                 display_target = f"{target_member.display_name}"
             else:
                 display_target = f"{target.name}#{target.discriminator}"
+
+            response.set_author(name=display_target, icon_url=target.avatar_url_as(format="png", size=128))
             
             try:
-                count, result = await get_user_markov(target.id, message, size, charlimit, attempts)
+                input_messages = await get_user_markov(target.id, message)
             except KeyError:
                 await message.channel.send(f"{message.author.mention} The user you have specified has had no recent messages. This function only works on users who have been active recently.")
                 return
-            
-            if result is None:
-                response.colour = 0xb81209
-                response.title = "Markov function failed"
-                response.description = "Unable to run markov chain - try running the command again"
-                response.set_author(name=display_target, icon_url=target.avatar_url_as(format="png", size=128))
-                response.set_footer(text=f"{datetime.utcnow().__str__()} | {count} messages in input")
-                await message.channel.send(embed=response)
+
+        if target_type == "channel":
+            if target.guild.id != message.guild.id:
+                await message.channel.send("Argument error: Channel provided is not in current server")
                 return
-            
-            response.colour = 0x243b61
-            response.description = result
-            response.set_author(name=display_target, icon_url=target.avatar_url_as(format="png", size=128))
-            response.set_footer(text=f"{datetime.utcnow().__str__()} | {count} messages in input")
-        await message.channel.send(embed=response)
-        return
-    
-    if target_type == "channel":
-        if target.guild.id != message.guild.id:
-            await message.channel.send("Argument error: Channel provided is not in current server")
-            return
-        async with message.channel.typing():
-            count, result = await get_channel_markov(target, size, charlimit, attempts)
-            
-            if count is None:  # permissions error
+            input_messages = await get_channel_markov(target)
+
+            if input_messages is None:  # permissions error
                 response.colour = 0xb81209
                 response.title = "Markov chain failed"
                 response.description = "Unable to run markov chain: Insufficient permissions to read channel history"
-                response.set_footer(text=f"{datetime.utcnow().__str__()}")
+                response.set_footer(text=f"{__common__.get_timestamp()}")
                 response.set_author(name=f"#{target.name}")
                 # if we can't read the channel we should check if we can write to it also
                 try:
                     await message.channel.send(embed=response)
                 except discord.Forbidden:
                     pass
-            
-            if result is None:
-                response.colour = 0xb81209
-                response.title = "Markov function failed"
-                response.description = "Unable to run markov chain - try running the command again"
-                response.set_footer(text=f"{datetime.utcnow().__str__()} | {count} messages in input")
-                response.set_author(name=f"#{target.name}")
-                await message.channel.send(embed=response)
-                return
-            
+
+            response.set_author(name=f"#{target.name}")
+
+        if size == -1:
+            if len(input_messages) < 500:
+                size = 2
+            elif 500 < len(input_messages) < 1000:
+                size = 3
+            elif 1000 < len(input_messages):
+                size = 4
+
+        src_string = "\n".join([x.content for x in input_messages])
+        model = markovify.NewlineText(src_string, state_size=size)
+        await asyncio.sleep(0.1)
+        result = model.make_short_sentence(max_chars=charlimit, tries=attempts)
+
+        if result is None:
+            response.colour = 0xb81209
+            response.title = "Markov function failed"
+            response.description = "Unable to run markov chain - try running the command again"
+        else:
             response.colour = 0x243b61
             response.description = result
-            response.set_footer(text=f"{datetime.utcnow().__str__()} | {count} messages in input")
-            response.set_author(name=f"#{target.name}")
+
+        response.set_footer(text=f"{__common__.get_timestamp()} | "
+                                 f"{len(input_messages)} messages in input | "
+                                 f"Size: {size}")
         await message.channel.send(embed=response)
         return
-    return

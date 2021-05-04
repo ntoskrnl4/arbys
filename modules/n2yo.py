@@ -147,7 +147,7 @@ async def process_command(command: str, message: discord.Message):
         embed = discord.Embed(title="Command usage", description=cmd_desc, colour=0x42bf92)
         embed = embed.add_field(name="Get current satellite position", value=get_sat_pos)
         embed = embed.add_field(name="Get upcoming passes", value=get_passes)
-        embed = embed.set_footer(text=datetime.datetime.utcnow().__str__())
+        embed = embed.set_footer(text=__common__.get_timestamp())
         await message.channel.send(embed=embed)
         return
     
